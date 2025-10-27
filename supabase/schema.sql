@@ -1,0 +1,12 @@
+create extension if not exists pgcrypto;
+create table if not exists r3_users (id uuid primary key default gen_random_uuid(), auth_uid uuid, created_at timestamptz default now());
+create table if not exists r3_groups (id uuid primary key default gen_random_uuid(), code text unique not null, name text, created_at timestamptz default now());
+create table if not exists r3_messages (id uuid primary key default gen_random_uuid(), group_id uuid references r3_groups(id) on delete set null, registrant_id uuid references r3_users(id), origin_url text not null, title text, creator_hint text, created_at timestamptz default now());
+create table if not exists r3_shares (id bigserial primary key, message_id uuid references r3_messages(id) on delete cascade, sender_id uuid references r3_users(id), parent_share_id bigint references r3_shares(id), ref_code text unique, created_at timestamptz default now());
+create table if not exists r3_hits (id bigserial primary key, share_id bigint references r3_shares(id) on delete cascade, viewer_fingerprint text, created_at timestamptz default now());
+alter table r3_messages enable row level security;
+alter table r3_shares enable row level security;
+alter table r3_hits enable row level security;
+create policy if not exists "messages_select_all" on r3_messages for select using (true);
+create policy if not exists "shares_select_all"   on r3_shares   for select using (true);
+create policy if not exists "hits_select_all"     on r3_hits     for select using (true);

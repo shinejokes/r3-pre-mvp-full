@@ -1,0 +1,1 @@
+export function makeRefCode(len:number=7){const c='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';let o='';for(let i=0;i<len;i++) o+=c[Math.floor(Math.random()*c.length)];return o;}
