@@ -14,7 +14,7 @@ export async function GET(
   const titleText = `R3 pre-MVP`;
   const shareText = `shareId: ${shareId}`;
 
-  // 핵심: ImageResponse 첫 번째 인자를 ReactElement로 명확히 캐스팅
+  // JSX를 먼저 변수에 담고, ReactElement로 캐스팅
   const jsx = (
     <div
       style={{
