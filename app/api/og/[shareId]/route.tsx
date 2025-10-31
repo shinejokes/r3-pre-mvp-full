@@ -14,8 +14,8 @@ export async function GET(
   const titleText = `R3 pre-MVP`;
   const shareText = `shareId: ${shareId}`;
 
- return new ImageResponse(
-  (
+  // 핵심: ImageResponse 첫 번째 인자를 ReactElement로 명확히 캐스팅
+  const jsx = (
     <div
       style={{
         width: "1200px",
@@ -65,10 +65,10 @@ export async function GET(
         r3-pre-mvp-full
       </div>
     </div>
-  ) as React.ReactElement,   // 👈 이 한 줄 추가!
-  {
+  ) as React.ReactElement;
+
+  return new ImageResponse(jsx, {
     width: 1200,
     height: 630,
-  }
-);
-
+  });
+}
