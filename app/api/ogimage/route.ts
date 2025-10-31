@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const shareId = searchParams.get('shareId')
 
   if (!shareId) {
-    return new NextResponse('Missing shareId', { status: 400 })
+    return new Response('Missing shareId', { status: 400 })
   }
 
   const supabase = supabaseServer()
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     .maybeSingle()
 
   if (shareError || !shareRow) {
-    return new NextResponse('Not found', { status: 404 })
+    return new Response('Not found', { status: 404 })
   }
 
   // 3) r3_hits에서 현재까지의 조회수 count
