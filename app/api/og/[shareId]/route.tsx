@@ -1,20 +1,16 @@
-// app/api/og/[shareId]/route.ts
+// app/api/og/[shareId]/route.tsx
 import { NextRequest } from "next/server";
 import { ImageResponse } from "next/og";
 import React from "react";
 
-// Next.js App Router의 Route Handler
 export const runtime = "edge";
 
-// 이건 GET /api/og/:shareId 형태로 호출된다고 가정합니다.
 export async function GET(
   req: NextRequest,
   { params }: { params: { shareId: string } }
 ) {
   const { shareId } = params;
 
-  // 여기서는 일단 shareId만 표시해 주자.
-  // 나중에 DB에서 메시지/제목 등 불러와서 넣을 수 있음.
   const titleText = `R3 pre-MVP`;
   const shareText = `shareId: ${shareId}`;
 
