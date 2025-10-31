@@ -1,6 +1,6 @@
 // app/api/ogimage/route.ts
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { supabaseServer } from '../../../lib/supabaseServer'
 import { createCanvas } from 'canvas'
 
@@ -96,9 +96,10 @@ export async function GET(req: NextRequest) {
   ctx.fillText('R3 / shared link tracker', 60, height - 40)
 
   // 5) PNG로 변환해서 응답
-  const buffer = canvas.toBuffer('image/png')
+ const buffer = new Uint8Array(canvas.toBuffer('image/png'))
 
-  return new NextResponse(buffer, {
+
+  return new Response(buffer, {
     status: 200,
     headers: {
       'Content-Type': 'image/png',
