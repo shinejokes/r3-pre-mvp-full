@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
 
 // 여러 줄로 텍스트를 적절히 줄바꿈해서 그려주는 함수
 function drawWrappedText(
-  ctx: CanvasRenderingContext2D,
+  ctx: any,
   text: string,
   x: number,
   y: number,
