@@ -138,7 +138,7 @@ function drawWrappedText(
 
 // 둥근 모서리 사각형
 function drawRoundRect(
-  ctx: CanvasRenderingContext2D,
+  ctx: any,
   x: number,
   y: number,
   w: number,
