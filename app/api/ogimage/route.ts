@@ -2,18 +2,16 @@
 
 import { NextRequest } from "next/server";
 import { supabaseServer } from "../../../lib/supabaseServer";
-
-// node-canvas (서버 측에서 이미지를 직접 그리는 라이브러리)
 import { createCanvas } from "canvas";
 
-// Vercel Edge Runtime에서는 node-canvas를 못 쓰므로,
-// 이 라우트는 Node.js 런타임에서 돌도록 강제로 지정합니다.
+// 이 라우트는 node-canvas를 쓰므로 반드시 Node.js 런타임이어야 합니다.
 export const runtime = "nodejs";
-// 캐시 없이 항상 최신 조회수를 그리게 하고 싶으니 동적 처리
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  // 1) URL에서 shareId 추출
+  //
+  // 1) 쿼리에서 shareId 읽기
+  //
   const { searchParams } = new URL(req.url);
   const shareId = searchParams.get("shareId");
 
@@ -21,22 +19,22 @@ export async function GET(req: NextRequest) {
     return new Response("Missing shareId", { status: 400 });
   }
 
-  // 2) Supabase 클라이언트 준비
+  //
+  // 2) Supabase 클라이언트
+  //
   const supabase = supabaseServer();
 
-  // 3) Supabase에서 제목(title) 가져오기
-  // r3_shares:
-  //   ref_code  (우리가 공유 아이디로 쓰는 값)
-  //   title     (사람이 쓴 메시지 제목 / 설명)
   //
-  // ref_code == shareId 인 행 하나를 찾는다.
-  let titleText = "";
+  // 3) r3_shares에서 title 가져오기
+  //    ref_code == shareId 인 행을 찾는다.
+  //
+  let titleText = "(no title)";
   {
     const { data, error } = await supabase
       .from("r3_shares")
       .select("title")
       .eq("ref_code", shareId)
-      .maybeSingle(); // 없으면 null, 있으면 1개
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching title:", error.message);
@@ -44,24 +42,19 @@ export async function GET(req: NextRequest) {
 
     if (data && data.title) {
       titleText = data.title;
-    } else {
-      // 못 찾았을 경우에도 계속 이미지는 만들어 줍니다.
-      titleText = "(no title)";
     }
   }
 
-  // 4) Supabase에서 조회수(hits) 가져오기
-  // r3_hits:
-  //   share_id  (또는 비슷한 이름. 우리는 shareId와 매칭된다고 가정)
-  //   created_at ...
   //
-  // count 전용 select 로 개수를 얻는다.
+  // 4) r3_hits에서 조회수 세기
+  //    share_id == shareId 인 행의 개수를 exact count로 요청
+  //
   let viewsCount = 0;
   {
     const { count, error } = await supabase
       .from("r3_hits")
       .select("*", { count: "exact", head: true })
-      .eq("share_id", shareId);
+      .eq("share_id", shareId); // <- 만약 컬럼명이 다르면 바꿔주셔야 합니다
 
     if (error) {
       console.error("Error counting hits:", error.message);
@@ -72,35 +65,30 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 5) node-canvas로 OG 썸네일 이미지 그리기
   //
-  // 보편적인 OG 사이즈: 1200 x 630
-  // (카카오톡 등 미리보기에도 잘 맞는 가로형 비율)
+  // 5) node-canvas로 OG 이미지 만들기
+  //
   const width = 1200;
   const height = 630;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
 
-  // ----- 배경 -----
-  ctx.fillStyle = "#ffffff"; // 흰 배경
+  // 배경 (흰색) + 테두리(연한 회색)
+  ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
 
-  // 테두리(연한 회색 박스 느낌)
   ctx.strokeStyle = "#cccccc";
   ctx.lineWidth = 8;
   ctx.strokeRect(0, 0, width, height);
 
-  // ----- 텍스트 스타일 -----
-  // 상단: 서비스 이름
+  // 상단 서비스 이름
   ctx.fillStyle = "#000000";
-  ctx.font = "bold 72px sans-serif";
   ctx.textAlign = "center";
-
+  ctx.font = "bold 72px sans-serif";
   ctx.fillText("R3 pre-MVP", width / 2, 180);
 
-  // 가운데: 실제 제목 (여러 글자일 수 있으므로 줄바꿈 처리 간단 버전)
-  // 너무 길면 잘라서 두 줄까지만 표시
-  const maxLen = 40; // 너무 길 경우 잘라주자 (간단처리)
+  // 제목은 너무 길면 잘라서 1줄로
+  const maxLen = 40;
   const safeTitle =
     titleText.length > maxLen
       ? titleText.slice(0, maxLen - 3) + "..."
@@ -117,20 +105,30 @@ export async function GET(req: NextRequest) {
   ctx.font = "40px sans-serif";
   ctx.fillText(`Views: ${viewsCount}`, width / 2, 420);
 
-  // 하단: 도메인/서버명
+  // 하단 도메인
   ctx.fillStyle = "#666666";
   ctx.font = "36px sans-serif";
   ctx.fillText("r3-pre-mvp-full", width / 2, 500);
 
-  // 6) PNG 바이너리 추출
+  //
+  // 6) PNG buffer -> ArrayBuffer 변환
+  //
   const pngBuffer = canvas.toBuffer("image/png");
 
+  // pngBuffer는 Node.js Buffer (Uint8Array 비슷하지만 Response가 싫어함)
+  // 그래서 표준 ArrayBuffer로 잘라서 넘긴다.
+  const pngArrayBuffer = pngBuffer.buffer.slice(
+    pngBuffer.byteOffset,
+    pngBuffer.byteOffset + pngBuffer.byteLength
+  );
+
+  //
   // 7) 응답
-  return new Response(pngBuffer, {
+  //
+  return new Response(pngArrayBuffer, {
     status: 200,
     headers: {
       "Content-Type": "image/png",
-      // 캐시를 막아서 항상 최신 조회수 이미지가 뜨게
       "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
     },
   });
