@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  // 1) URL 쿼리에서 shareId 추출
+  // 1) Read shareId from query
   const { searchParams } = new URL(req.url);
   const shareId = searchParams.get("shareId");
 
@@ -16,11 +16,13 @@ export async function GET(req: NextRequest) {
     return new Response("Missing shareId", { status: 400 });
   }
 
-  // 2) Supabase 클라이언트
+  // 2) Init Supabase
   const supabase = supabaseServer();
 
-  // 3) r3_shares에서 title 가져오기 (ref_code == shareId)
-  let titleText = "(no title)";
+  // 3) Fetch title from r3_shares (ref_code == shareId)
+  // We'll still fetch it, but we won't directly render it if it's non-English.
+  // We'll generate a safe English fallback line for display.
+  let originalTitle = "(no title)";
   {
     const { data, error } = await supabase
       .from("r3_shares")
@@ -33,11 +35,32 @@ export async function GET(req: NextRequest) {
     }
 
     if (data && data.title) {
-      titleText = data.title;
+      originalTitle = data.title;
     }
   }
 
-  // 4) r3_hits에서 조회수 세기 (share_id == shareId)
+  // ---- English-safe display line for the title area ----
+  // Option A: just show a generic English line such as "Shared content"
+  // Option B: try to include part of the original title (truncated),
+  //           but only ASCII characters.
+  //
+  // I'll do Option B: keep only ASCII printable chars from originalTitle.
+  // If nothing remains, fall back to "Shared content".
+  const asciiOnly = originalTitle
+    .split("")
+    .filter(ch => ch.charCodeAt(0) >= 32 && ch.charCodeAt(0) <= 126)
+    .join("");
+
+  let titleForDisplay =
+    asciiOnly.trim().length > 0 ? asciiOnly.trim() : "Shared content";
+
+  // Shorten it so it fits nicely
+  const maxLen = 40;
+  if (titleForDisplay.length > maxLen) {
+    titleForDisplay = titleForDisplay.slice(0, maxLen - 3) + "...";
+  }
+
+  // 4) Count views from r3_hits (share_id == shareId)
   let viewsCount = 0;
   {
     const { count, error } = await supabase
@@ -54,13 +77,13 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 5) node-canvas로 이미지 생성
+  // 5) Draw the OG image using node-canvas
   const width = 1200;
   const height = 630;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
 
-  // 배경 (흰색) + 연회색 테두리
+  // Background: white, with light gray border
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
 
@@ -68,45 +91,35 @@ export async function GET(req: NextRequest) {
   ctx.lineWidth = 8;
   ctx.strokeRect(0, 0, width, height);
 
-  // 텍스트 기본 스타일
+  // Centered black text
   ctx.fillStyle = "#000000";
   ctx.textAlign = "center";
 
-  // 상단 서비스 이름
+  // Header: service label
   ctx.font = "bold 72px sans-serif";
   ctx.fillText("R3 pre-MVP", width / 2, 180);
 
-  // 너무 긴 제목은 잘라서 한 줄로
-  const maxLen = 40;
-  const safeTitle =
-    titleText.length > maxLen
-      ? titleText.slice(0, maxLen - 3) + "..."
-      : titleText;
-
+  // Title (ASCII-only fallback)
   ctx.font = "48px sans-serif";
-  ctx.fillText(safeTitle, width / 2, 280);
+  ctx.fillText(titleForDisplay, width / 2, 280);
 
-  // shareId
+  // ShareId line
   ctx.font = "40px sans-serif";
-  ctx.fillText(`shareId: ${shareId}`, width / 2, 360);
+  ctx.fillText(`Share ID: ${shareId}`, width / 2, 360);
 
-  // 조회수
+  // Views line
   ctx.font = "40px sans-serif";
   ctx.fillText(`Views: ${viewsCount}`, width / 2, 420);
 
-  // 하단 도메인 표시 (회색)
+  // Footer (domain / project name)
   ctx.fillStyle = "#666666";
   ctx.font = "36px sans-serif";
   ctx.fillText("r3-pre-mvp-full", width / 2, 500);
 
-  // 6) PNG를 바이트 배열로 추출
-  //    canvas.toBuffer("image/png") -> Node Buffer
+  // 6) Export PNG as Uint8Array for Response
   const pngBuffer = canvas.toBuffer("image/png");
-
-  // Response는 Uint8Array도 받을 수 있으므로 변환
   const pngBytes = new Uint8Array(pngBuffer);
 
-  // 7) HTTP 응답
   return new Response(pngBytes, {
     status: 200,
     headers: {
