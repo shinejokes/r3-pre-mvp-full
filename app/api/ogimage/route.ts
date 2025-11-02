@@ -96,8 +96,9 @@ export async function GET(req: NextRequest) {
   ctx.textAlign = "center";
 
   // Header: service label
-  ctx.font = "bold 72px sans-serif";
-  ctx.fillText("R3 pre-MVP", width / 2, 180);
+ctx.font = "bold 72px sans-serif";
+ctx.fillText("HELLO ENGLISH TEST", width / 2, 180);
+
 
   // Title (ASCII-only fallback)
   ctx.font = "48px sans-serif";
