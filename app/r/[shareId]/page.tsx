@@ -138,14 +138,17 @@ export default async function SharePage({ params, searchParams }: PageProps) {
   let insertOK = false;
 
   if (numericId !== undefined && numericId !== null && !isKakaoBot) {
-    const { error } = await supabase
-      .from("r3_hits")
-      .insert([
-        {
-          share_id: numericId,
-          viewer_fingerprint: "server-record",
-        },
-      ]);
+ 
+   const fingerprint = crypto.randomUUID();
+
+   const { error } = await supabase
+    .from("r3_hits")
+    .insert([
+    {
+      share_id: numericId,
+      viewer_fingerprint: fingerprint,
+    },
+  ]);
 
     if (error) {
       insertError = error.message;
