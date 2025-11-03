@@ -1,39 +1,31 @@
 // app/r/[shareId]/page.tsx
 
 import { Metadata } from "next";
-import { supabaseServer } from "../../lib/supabaseServer";
+// ⬇⬇⬇ 경로 수정: ../../../lib/supabaseServer 로 바뀜
+import { supabaseServer } from "../../../lib/supabaseServer";
 
 type PageProps = {
   params: { shareId: string };
 };
 
-// ✅ 중요: 이 페이지와 메타데이터는 항상 서버에서 동적으로 계산하라고
-// Next.js에게 명령합니다. (정적으로 빌드하려다가 Supabase 호출 때문에
-// Vercel에서 에러 나는 걸 막아줍니다.)
+// 이 페이지 / 메타데이터는 항상 동적으로 계산하도록 강제
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 /**
  * generateMetadata()
  *
- * 이 함수는 Next.js App Router에서 <head> 메타태그(og:image 등)를 생성합니다.
- * 카카오톡 / 페이스북 / 트위터 등이 링크 미리보기를 만들 때 이 정보를 씁니다.
- *
- * 동작 요약:
- * 1. params.shareId (예: "F6C8uDm")를 ref_code로 보고 r3_shares에서 row를 찾는다
- *    - id (숫자 기본키)
- *    - title
- * 2. 그 id로 r3_hits를 count해서 조회수(viewCount)를 얻는다
- * 3. og:image 로 우리가 만든 동적 썸네일
- *    https://r3-pre-mvp-full.vercel.app/api/ogimage?shareId=...
- *    를 지정한다
+ * 카카오톡 / 페이스북 / 트위터 미리보기용 메타태그(og:image 등)를 생성한다.
+ * 1. shareId (예: "F6C8uDm")를 r3_shares.ref_code로 보고 해당 row를 불러온다.
+ *    -> numeric id, title
+ * 2. 그 numeric id로 r3_hits에서 조회수 count
+ * 3. og:image를 /api/ogimage?shareId=... 로 지정
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const supabase = supabaseServer();
   const shareCode = params.shareId; // ex) "F6C8uDm"
 
-  // 1) r3_shares에서 ref_code = shareCode인 row 찾기
-  //    컬럼: id (number), title (string?)
+  // 1) r3_shares에서 ref_code = shareCode 인 row 찾기
   let numericId: number | null = null;
   let rawTitle = "(no title)";
 
@@ -58,7 +50,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
   }
 
-  // 2) 조회수 카운트: r3_hits에서 share_id == numericId
+  // 2) 조회수 count: r3_hits에서 share_id == numericId
   let viewCount = 0;
   if (numericId !== null) {
     const { count, error } = await supabase
@@ -106,18 +98,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 /**
- * 페이지 본문
+ * 실제 페이지 본문
  *
- * - 현재는 단순히 정보만 보여줍니다.
- * - 나중에 "이 공유는 실제 유튜브 링크 XX로 보내라" 같은 목적지가 정해지면,
- *   r3_shares에서 그 URL을 읽어서 redirect(...)로 보내도록 바꿀 수 있습니다.
- * - 여기서는 직접 조회수까지 다시 읽어서 화면에도 보여줍니다.
+ * - 현재는 정보 확인용 UI.
+ * - 나중에 r3_shares에 실제 대상 URL(예: 유튜브 링크)이 있다면,
+ *   그걸 읽어서 redirect()로 넘길 수 있다.
  */
 export default async function SharePage({ params }: PageProps) {
   const supabase = supabaseServer();
   const shareCode = params.shareId;
 
-  // 다시 r3_shares에서 정보 읽기 (title / numeric id)
+  // r3_shares에서 이 공유의 제목 / id 다시 읽기
   const { data: shareRow } = await supabase
     .from("r3_shares")
     .select("id, title")
@@ -127,7 +118,7 @@ export default async function SharePage({ params }: PageProps) {
   const numericId = shareRow?.id ?? null;
   const titleText = shareRow?.title ?? "(no title)";
 
-  // 조회수
+  // 조회수 가져오기
   let viewCount = 0;
   if (numericId !== null) {
     const { count } = await supabase
