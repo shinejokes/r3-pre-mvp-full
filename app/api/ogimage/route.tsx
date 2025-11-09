@@ -1,26 +1,27 @@
-// app/api/ogimage/route.tsx
 import { ImageResponse } from "next/og";
+import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  // 텍스트/폰트 문제를 피하려고 아주 단순한 박스로 시작
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const ref = (url.searchParams.get("shareId") || "").trim();
+
   return new ImageResponse(
     (
       <div
         style={{
-          width: 1200,
-          height: 630,
-          background: "linear-gradient(135deg, #222, #666)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          width: 1200, height: 630, background: "#fff",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: "#000", fontSize: 72, fontWeight: 700,
+          fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial',
         }}
       >
-        <div style={{ width: 800, height: 300, borderRadius: 32, background: "#ffd54f" }} />
+        {ref ? `shareId = ${ref}` : "No shareId"}
       </div>
     ),
     { width: 1200, height: 630, headers: { "Cache-Control": "no-store" } }
   );
 }
+
