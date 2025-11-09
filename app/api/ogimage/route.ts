@@ -135,7 +135,7 @@ function makeImage(
           },
         ],
       },
-    },
+    } as any, // 👈 타입 검사 무시 (핵심)
     {
       width: 1200,
       height: 630,
