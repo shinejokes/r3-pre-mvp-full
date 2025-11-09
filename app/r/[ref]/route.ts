@@ -1,8 +1,7 @@
-// app/r/[ref]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
-/** 절대 URL 생성 (Vercel/프록시 대응) */
+/** 절대 URL 생성 */
 function getBaseUrl(req: NextRequest) {
   const proto = req.headers.get("x-forwarded-proto") ?? "https";
   const host =
@@ -29,7 +28,7 @@ function escapeHtml(str: string) {
     .replaceAll("'", "&#039;");
 }
 
-/** 클라이언트 IP 추출(로그 용) */
+/** 클라이언트 IP (로그 용) */
 function getClientIp(req: NextRequest) {
   const h = req.headers.get("x-forwarded-for");
   if (!h) return null;
@@ -40,88 +39,56 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { ref: string } }
 ) {
-  const { ref } = params;
+  const rawRef = params.ref ?? "";
+  const ref = decodeURIComponent(rawRef).trim(); // 공백/인코딩 방어
   const ua = req.headers.get("user-agent") || "";
   const baseUrl = getBaseUrl(req);
   const supabase = supabaseServer();
 
-  // ---------- 1) ref_code로 share + (가능한) message 조인 시도 ----------
-  // 관계 이름이 'messages' 또는 'r3_messages' 등으로 다를 수 있어 둘 다 시도
-  // NOTE: 조인 형식은 프로젝트의 FK 이름에 따라 달라질 수 있음
-  let msg:
-    | { id: string; title: string | null; url: string | null; description: string | null }
-    | null = null;
-  let share: { id: string; ref_code: string; message_id: string | null } | null = null;
-
-  // 시도 A: alias 없이 테이블명으로 중첩
-  let qA = await supabase
+  // ---------- 1) ref_code로 share "단순 조회" ----------
+  // maybeSingle()로 0건/1건 모두 안전 처리
+  let { data: share, error: shareErr } = await supabase
     .from("r3_shares")
-    .select(
-      "id, ref_code, message_id, r3_messages ( id, title, url, description )"
-    )
+    .select("id, ref_code, message_id, created_at")
     .eq("ref_code", ref)
     .maybeSingle();
 
-  if (qA.data) {
-    share = {
-      id: qA.data.id,
-      ref_code: qA.data.ref_code,
-      message_id: qA.data.message_id,
-    };
-    const j = (qA.data as any).r3_messages;
-    if (j) {
-      msg = Array.isArray(j) ? j[0] : j;
-    }
-  }
-
-  // 시도 B: alias 로 'messages' 사용
-  if (!msg) {
-    const qB = await supabase
+  // 혹시 공백/대소문자 이슈를 대비해 ilike 재시도
+  if (!share && !shareErr) {
+    const { data: share2 } = await supabase
       .from("r3_shares")
-      .select(
-        "id, ref_code, message_id, messages:r3_messages ( id, title, url, description )"
-      )
-      .eq("ref_code", ref)
-      .maybeSingle();
-
-    if (qB.data) {
-      share = {
-        id: qB.data.id,
-        ref_code: qB.data.ref_code,
-        message_id: qB.data.message_id,
-      };
-      const j = (qB.data as any).messages;
-      if (j) {
-        msg = Array.isArray(j) ? j[0] : j;
-      }
+      .select("id, ref_code, message_id, created_at")
+      .ilike("ref_code", ref);
+    if (Array.isArray(share2) && share2.length > 0) {
+      share = share2[0];
     }
   }
 
-  // ---------- 2) 조인으로 못 구했으면, message_id로 단독 조회 ----------
+  if (shareErr) {
+    console.error("[/r/:ref] share lookup error", { ref, shareErr: String(shareErr) });
+  }
   if (!share) {
-    console.error("[/r/:ref] share not found", { ref });
+    console.error("[/r/:ref] share not found (after fallback)", { ref });
     return new NextResponse("Share not found", { status: 404 });
   }
 
-  if (!msg) {
-    if (!share.message_id) {
-      console.error("[/r/:ref] share has no message_id", { ref, share });
-      return new NextResponse("Message not found", { status: 404 });
-    }
-    const { data: m, error: mErr } = await supabase
-      .from("r3_messages")
-      .select("id, title, url, description")
-      .eq("id", share.message_id)
-      .single();
+  // ---------- 2) message_id로 message 단독 조회 ----------
+  const { data: msg, error: msgErr } = await supabase
+    .from("r3_messages")
+    .select("id, title, url, description")
+    .eq("id", share.message_id)
+    .maybeSingle();
 
-    if (mErr || !m) {
-      console.error("[/r/:ref] message lookup failed", {
-        message_id: share.message_id,
-        mErr,
-      });
-      return new NextResponse("Message not found", { status: 404 });
-    }
-    msg = m;
+  if (msgErr) {
+    console.error("[/r/:ref] message lookup error", {
+      ref,
+      message_id: share.message_id,
+      msgErr: String(msgErr),
+    });
+  }
+  if (!msg) {
+    console.error("[/r/:ref] message not found", { ref, message_id: share.message_id });
+    return new NextResponse("Message not found", { status: 404 });
   }
 
   const title = msg.title ?? "R3 Share";
@@ -173,8 +140,7 @@ export async function GET(
       ip_hash: getClientIp(req),
     });
   } catch (e) {
-    console.error("[/r/:ref] hits insert failed", { ref, error: e });
-    // 기록 실패해도 사용자 경험을 막진 않음
+    console.error("[/r/:ref] hits insert failed", { ref, error: String(e) });
   }
 
   return NextResponse.redirect(targetUrl, { status: 302 });
