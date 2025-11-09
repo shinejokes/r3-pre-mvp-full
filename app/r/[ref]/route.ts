@@ -113,12 +113,20 @@ export async function GET(req: NextRequest, { params }: { params: { ref: string 
 
   // 4) 일반 사용자면 hits 기록 후 리다이렉트
   try {
-    await supabase.from("r3_hits").insert({
-      share_ref_code: ref,
-      user_agent: ua.slice(0, 500),
-      referer: req.headers.get("referer")?.slice(0, 500) ?? null,
-      ip_hash: getClientIp(req),
-    });
+    // 교체 전
+// await supabase.from("r3_hits").insert({
+//   share_ref_code: ref,
+//   user_agent: ua.slice(0, 500),
+//   referer: req.headers.get("referer")?.slice(0, 500) ?? null,
+//   ip_hash: getClientIp(req),
+// });
+
+// 교체 후 (← 스키마에 맞춤)
+await supabase.from("r3_hits").insert({
+  share_id: share.id,  // ← 중요: r3_shares.id (uuid/text) 값
+  viewer_fingerprint: `${getClientIp(req) ?? "noip"}|${ua.slice(0,160)}`, // 테이블에 있는 컬럼명에 맞춤
+});
+
   } catch (e) {
     console.error("[/r/:ref] hits insert failed", { ref, error: String(e) });
   }
