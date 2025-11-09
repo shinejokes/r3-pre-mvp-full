@@ -1,3 +1,4 @@
+// app/api/ogimage/route.tsx
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import { supabaseServer } from "../../../lib/supabaseServer";
@@ -15,23 +16,31 @@ function card(opts: { title: string; subtitle: string; ref: string; views: numbe
     (
       <div
         style={{
-          width: 1200, height: 630,
+          width: 1200,
+          height: 630,
           background: "linear-gradient(135deg,#fff,#f5f5f5)",
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          color: "#111", fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial',
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#111",
+          fontFamily:
+            'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial',
         }}
       >
-        <div style={{ fontSize: 78, fontWeight: 800, marginBottom: 18, textAlign: "center" }}>
+        <div style={{ fontSize: 72, fontWeight: 800, marginBottom: 18, textAlign: "center" }}>
           {truncate(title, 28)}
         </div>
         <div style={{ fontSize: 42, opacity: 0.9, marginBottom: 28, textAlign: "center" }}>
           {truncate(subtitle, 46)}
         </div>
         <div style={{ fontSize: 44, marginBottom: 8 }}>
-          <span style={{ opacity: 0.6 }}>Share ID:</span>&nbsp;<span style={{ color: "#d32f2f" }}>{ref}</span>
+          <span style={{ opacity: 0.6 }}>Share ID:</span>&nbsp;
+          <span style={{ color: "#d32f2f" }}>{ref}</span>
         </div>
         <div style={{ fontSize: 44, marginBottom: 24 }}>
-          <span style={{ opacity: 0.6 }}>Views:</span>&nbsp;<span style={{ color: "#1976d2" }}>{String(views)}</span>
+          <span style={{ opacity: 0.6 }}>Views:</span>&nbsp;
+          <span style={{ color: "#1976d2" }}>{String(views)}</span>
         </div>
         <div style={{ fontSize: 30, opacity: 0.5 }}>{host}</div>
       </div>
@@ -55,7 +64,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = supabaseServer();
 
-  // share
+  // 1) share
   const { data: share } = await supabase
     .from("r3_shares")
     .select("id, message_id")
@@ -65,7 +74,7 @@ export async function GET(req: NextRequest) {
     return card({ title: "R3 pre-MVP", subtitle: "Share not found", ref, views: 0, host });
   }
 
-  // message (title/desc/url/origin_url)
+  // 2) message (title/desc/url/origin_url)
   const mid = (share.message_id ?? "").toString().trim();
   const { data: msg } = await supabase
     .from("r3_messages")
@@ -76,12 +85,13 @@ export async function GET(req: NextRequest) {
   const title = msg?.title ?? "R3 pre-MVP";
   const subtitle = msg?.description ?? msg?.url ?? msg?.origin_url ?? host;
 
-  // views
+  // 3) hits count
   const { count } = await supabase
     .from("r3_hits")
     .select("*", { count: "exact", head: true })
     .eq("share_id", share.id);
   const views = count ?? 0;
 
+  // 4) 카드 렌더
   return card({ title, subtitle, ref, views, host });
 }
