@@ -4,134 +4,111 @@ import { ImageResponse } from "next/og";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
 export const runtime = "edge";
-export const dynamic = "force-dynamic"; // 캐시로 인한 빈 응답 방지
+export const dynamic = "force-dynamic"; // 캐시로 인한 빈응답 방지
 
 function getHost(req: NextRequest) {
   return req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "localhost:3000";
-}
-function getBaseUrl(req: NextRequest) {
-  const proto = req.headers.get("x-forwarded-proto") ?? "https";
-  return `${proto}://${getHost(req)}`;
 }
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const ref = (url.searchParams.get("shareId") || "").trim();
-  const dbg = url.searchParams.get("debug");
+  const debug = url.searchParams.get("debug") === "1";
 
-  // ---- DEBUG: 폰트 없이도 100% 보이는 컬러 박스 ----
-  if (dbg === "1") {
+  // 디버그: 텍스트도 SVG로 출력
+  if (debug) {
     return new ImageResponse(
       (
-        <div
-          style={{
-            width: 1200,
-            height: 630,
-            background: "linear-gradient(135deg, #222 0%, #555 50%, #999 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {/* 글자 없음! 박스만 */}
-          <div style={{ width: 800, height: 300, background: "#ffd54f", borderRadius: 32 }} />
-        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+          <rect width="1200" height="630" fill="#ffffff" />
+          <rect x="140" y="120" width="920" height="390" rx="28" fill="#ffd54f" stroke="#111" strokeWidth="6" />
+          <text x="600" y="230" textAnchor="middle" fontSize="64" fill="#111">R3 DEBUG MODE</text>
+          <text x="600" y="320" textAnchor="middle" fontSize="42" fill="#333">shareId = {ref || "-"}</text>
+          <text x="600" y="420" textAnchor="middle" fontSize="42" fill="#333">{getHost(req)}</text>
+        </svg>
       ),
-      {
-        width: 1200,
-        height: 630,
-        headers: { "Cache-Control": "no-store" },
-      }
-    );
-  }
-
-  try {
-    const supabase = supabaseServer();
-    const baseUrl = getBaseUrl(req);
-
-    if (!ref) {
-      // ref 없으면 역시 박스만
-      return new ImageResponse(
-        <div style={{ width: 1200, height: 630, background: "#e0e0e0" }} />,
-        { width: 1200, height: 630, headers: { "Cache-Control": "no-store" } }
-      );
-    }
-
-    // 1) ref_code -> share.id
-    const { data: share } = await supabase
-      .from("r3_shares")
-      .select("id, ref_code, message_id")
-      .eq("ref_code", ref)
-      .maybeSingle();
-
-    if (!share) {
-      // 못 찾으면 회색 박스
-      return new ImageResponse(
-        <div style={{ width: 1200, height: 630, background: "#cfd8dc" }} />,
-        { width: 1200, height: 630, headers: { "Cache-Control": "no-store" } }
-      );
-    }
-
-    // 2) hits 카운트 (share_id 스키마)
-    const { count } = await supabase
-      .from("r3_hits")
-      .select("*", { count: "exact", head: true })
-      .eq("share_id", share.id);
-
-    // 3) 정상 카드 (텍스트 최소화: 단일 숫자만 — 폰트 의존 낮춤)
-    const views = count ?? 0;
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            width: 1200,
-            height: 630,
-            background: "#ffffff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {/* 텍스트를 아주 작게만 사용 (폰트 문제 회피), 보조로 큰 박스 */}
-          <div
-            style={{
-              width: 1000,
-              height: 500,
-              borderRadius: 40,
-              background: "#f5f5f5",
-              border: "6px solid #222",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                width: 600,
-                height: 220,
-                background: "#90caf9",
-                borderRadius: 24,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <span style={{ fontSize: 64 }}>{String(views)}</span>
-            </div>
-          </div>
-        </div>
-      ),
-      {
-        width: 1200,
-        height: 630,
-        headers: { "Cache-Control": "no-store" },
-      }
-    );
-  } catch (e) {
-    // 치명적 오류 시에도 컬러 박스 반환
-    return new ImageResponse(
-      <div style={{ width: 1200, height: 630, background: "#ef9a9a" }} />,
       { width: 1200, height: 630, headers: { "Cache-Control": "no-store" } }
     );
   }
+
+  const supabase = supabaseServer();
+
+  if (!ref) {
+    return grey("No shareId");
+  }
+
+  // 1) ref_code -> share.id
+  const { data: share } = await supabase
+    .from("r3_shares")
+    .select("id, ref_code, message_id")
+    .eq("ref_code", ref)
+    .maybeSingle();
+
+  if (!share) return grey("Share not found");
+
+  // 2) message(타이틀/설명/URL)
+  const mid = (share.message_id ?? "").toString().trim();
+  const { data: msg } = await supabase
+    .from("r3_messages")
+    .select("title, description, url, origin_url")
+    .eq("id", mid)
+    .maybeSingle();
+
+  const title = msg?.title ?? "R3 pre-MVP";
+  const subtitle = msg?.description ?? msg?.url ?? msg?.origin_url ?? getHost(req);
+
+  // 3) hits 카운트 (스키마: r3_hits.share_id TEXT)
+  const { count } = await supabase
+    .from("r3_hits")
+    .select("*", { count: "exact", head: true })
+    .eq("share_id", share.id);
+
+  const views = count ?? 0;
+
+  // 4) SVG 카드 생성 (텍스트도 SVG <text>)
+  return new ImageResponse(
+    (
+      <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+        <defs>
+          <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#ffffff" />
+            <stop offset="1" stopColor="#f5f5f5" />
+          </linearGradient>
+        </defs>
+        <rect width="1200" height="630" fill="url(#bg)" />
+        <rect x="80" y="80" width="1040" height="470" rx="36" fill="#fafafa" stroke="#111" strokeWidth="6" />
+        <text x="600" y="200" textAnchor="middle" fontSize="72" fill="#111">{truncate(title, 28)}</text>
+        <text x="600" y="280" textAnchor="middle" fontSize="40" fill="#333">{truncate(subtitle, 46)}</text>
+
+        <text x="420" y="380" textAnchor="end" fontSize="44" fill="#666">Share ID:</text>
+        <text x="440" y="380" textAnchor="start" fontSize="44" fill="#111">{ref}</text>
+
+        <text x="420" y="450" textAnchor="end" fontSize="44" fill="#666">Views:</text>
+        <text x="440" y="450" textAnchor="start" fontSize="64" fill="#111">{String(views)}</text>
+
+        <text x="600" y="560" textAnchor="middle" fontSize="36" fill="#888">{getHost(req)}</text>
+      </svg>
+    ),
+    {
+      width: 1200,
+      height: 630,
+      headers: { "Cache-Control": "no-store" },
+    }
+  );
+}
+
+function grey(msg: string) {
+  return new ImageResponse(
+    (
+      <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+        <rect width="1200" height="630" fill="#cfd8dc" />
+        <text x="600" y="320" textAnchor="middle" fontSize="56" fill="#111">{msg}</text>
+      </svg>
+    ),
+    { width: 1200, height: 630, headers: { "Cache-Control": "no-store" } }
+  );
+}
+
+function truncate(s: string, n: number) {
+  return s.length > n ? s.slice(0, n - 1) + "…" : s;
 }
