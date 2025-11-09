@@ -3,15 +3,11 @@ import { NextRequest } from "next/server";
 import { ImageResponse } from "next/og";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
-export const runtime = "edge";            // Vercel Edge
-export const dynamic = "force-dynamic";   // 캐시로 인한 빈 응답 방지
+export const runtime = "edge";
+export const dynamic = "force-dynamic"; // 캐시로 인한 빈 응답 방지
 
 function getHost(req: NextRequest) {
-  return (
-    req.headers.get("x-forwarded-host") ??
-    req.headers.get("host") ??
-    "localhost:3000"
-  );
+  return req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "localhost:3000";
 }
 function getBaseUrl(req: NextRequest) {
   const proto = req.headers.get("x-forwarded-proto") ?? "https";
@@ -21,146 +17,121 @@ function getBaseUrl(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const ref = (url.searchParams.get("shareId") || "").trim();
-  const debug = url.searchParams.get("debug") === "1";
-  const baseUrl = getBaseUrl(req);
+  const dbg = url.searchParams.get("debug");
 
-  // 🔹 0) 디버그 모드: Supabase 안 거치고 즉시 카드 그리기
-  if (debug) {
-    return renderCard({
-      title: "R3 pre-MVP",
-      subtitle: "DEBUG MODE",
-      shareId: ref || "-",
-      views: 123,
-      host: getHost(req),
-    });
+  // ---- DEBUG: 폰트 없이도 100% 보이는 컬러 박스 ----
+  if (dbg === "1") {
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: 1200,
+            height: 630,
+            background: "linear-gradient(135deg, #222 0%, #555 50%, #999 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {/* 글자 없음! 박스만 */}
+          <div style={{ width: 800, height: 300, background: "#ffd54f", borderRadius: 32 }} />
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 630,
+        headers: { "Cache-Control": "no-store" },
+      }
+    );
   }
 
   try {
     const supabase = supabaseServer();
+    const baseUrl = getBaseUrl(req);
 
     if (!ref) {
-      return renderCard({
-        title: "R3 pre-MVP",
-        subtitle: "No shareId",
-        shareId: "-",
-        views: 0,
-        host: getHost(req),
-      });
+      // ref 없으면 역시 박스만
+      return new ImageResponse(
+        <div style={{ width: 1200, height: 630, background: "#e0e0e0" }} />,
+        { width: 1200, height: 630, headers: { "Cache-Control": "no-store" } }
+      );
     }
 
     // 1) ref_code -> share.id
-    const { data: share, error: sErr } = await supabase
+    const { data: share } = await supabase
       .from("r3_shares")
       .select("id, ref_code, message_id")
       .eq("ref_code", ref)
       .maybeSingle();
 
-    if (sErr) console.error("[ogimage] share query error:", String(sErr));
     if (!share) {
-      return renderCard({
-        title: "R3 pre-MVP",
-        subtitle: "Share not found",
-        shareId: ref,
-        views: 0,
-        host: getHost(req),
-      });
+      // 못 찾으면 회색 박스
+      return new ImageResponse(
+        <div style={{ width: 1200, height: 630, background: "#cfd8dc" }} />,
+        { width: 1200, height: 630, headers: { "Cache-Control": "no-store" } }
+      );
     }
 
-    // 2) 메시지(타이틀/URL/설명)
-    const mid = (share.message_id ?? "").toString().trim();
-    const { data: msg, error: mErr } = await supabase
-      .from("r3_messages")
-      .select("title, url, origin_url, description")
-      .eq("id", mid)
-      .maybeSingle();
-
-    if (mErr) console.error("[ogimage] message query error:", String(mErr));
-
-    const title = msg?.title ?? "R3 pre-MVP";
-    const subtitle = msg?.description ?? msg?.url ?? msg?.origin_url ?? baseUrl;
-
-    // 3) hits 카운트 (스키마: r3_hits.share_id TEXT)
-    const { count, error: cErr } = await supabase
+    // 2) hits 카운트 (share_id 스키마)
+    const { count } = await supabase
       .from("r3_hits")
       .select("*", { count: "exact", head: true })
       .eq("share_id", share.id);
 
-    if (cErr) console.error("[ogimage] count error:", String(cErr));
-
+    // 3) 정상 카드 (텍스트 최소화: 단일 숫자만 — 폰트 의존 낮춤)
     const views = count ?? 0;
-
-    return renderCard({
-      title,
-      subtitle,
-      shareId: ref,
-      views,
-      host: getHost(req),
-    });
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: 1200,
+            height: 630,
+            background: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {/* 텍스트를 아주 작게만 사용 (폰트 문제 회피), 보조로 큰 박스 */}
+          <div
+            style={{
+              width: 1000,
+              height: 500,
+              borderRadius: 40,
+              background: "#f5f5f5",
+              border: "6px solid #222",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div
+              style={{
+                width: 600,
+                height: 220,
+                background: "#90caf9",
+                borderRadius: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span style={{ fontSize: 64 }}>{String(views)}</span>
+            </div>
+          </div>
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 630,
+        headers: { "Cache-Control": "no-store" },
+      }
+    );
   } catch (e) {
-    console.error("[ogimage] fatal error:", String(e));
-    // 그래도 항상 이미지 반환
-    return renderCard({
-      title: "R3 pre-MVP",
-      subtitle: "OG image error",
-      shareId: "-",
-      views: 0,
-      host: "r3",
-    });
+    // 치명적 오류 시에도 컬러 박스 반환
+    return new ImageResponse(
+      <div style={{ width: 1200, height: 630, background: "#ef9a9a" }} />,
+      { width: 1200, height: 630, headers: { "Cache-Control": "no-store" } }
+    );
   }
-}
-
-/** JSX 기반 카드 렌더링 */
-function renderCard(opts: {
-  title: string;
-  subtitle: string;
-  shareId: string;
-  views: number;
-  host: string;
-}) {
-  const { title, subtitle, shareId, views, host } = opts;
-
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: 1200,
-          height: 630,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#ffffff",
-          color: "#111111",
-          fontFamily:
-            'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial',
-        }}
-      >
-        <div style={{ fontSize: 84, fontWeight: 700, marginBottom: 16, textAlign: "center" }}>
-          {truncate(title, 38)}
-        </div>
-        <div style={{ fontSize: 44, opacity: 0.9, marginBottom: 40, textAlign: "center" }}>
-          {truncate(subtitle, 48)}
-        </div>
-        <div style={{ fontSize: 40, marginBottom: 8 }}>
-          <span style={{ opacity: 0.6 }}>Share ID:</span>&nbsp;{shareId}
-        </div>
-        <div style={{ fontSize: 40, marginBottom: 32 }}>
-          <span style={{ opacity: 0.6 }}>Views:</span>&nbsp;{views}
-        </div>
-        <div style={{ fontSize: 36, opacity: 0.45 }}>{host}</div>
-      </div>
-    ),
-    {
-      width: 1200,
-      height: 630,
-      headers: {
-        // 캐시 지연 때문에 빈 화면 보이는 증상 방지
-        "Cache-Control": "no-store, max-age=0",
-      },
-    }
-  );
-}
-
-function truncate(s: string, n: number) {
-  return s.length > n ? s.slice(0, n - 1) + "…" : s;
 }
