@@ -45,31 +45,83 @@ export async function GET(
   const baseUrl = getBaseUrl(req);
   const supabase = supabaseServer();
 
-  // ---------- 1) ref_code로 share 찾기 ----------
-  const { data: share, error: shareErr } = await supabase
-    .from("r3_shares")
-    .select("id, ref_code, message_id, created_at")
-    .eq("ref_code", ref)
-    .single();
+  // ---------- 1) ref_code로 share + (가능한) message 조인 시도 ----------
+  // 관계 이름이 'messages' 또는 'r3_messages' 등으로 다를 수 있어 둘 다 시도
+  // NOTE: 조인 형식은 프로젝트의 FK 이름에 따라 달라질 수 있음
+  let msg:
+    | { id: string; title: string | null; url: string | null; description: string | null }
+    | null = null;
+  let share: { id: string; ref_code: string; message_id: string | null } | null = null;
 
-  if (shareErr || !share) {
-    console.error("[/r/:ref] share lookup failed", { ref, shareErr });
+  // 시도 A: alias 없이 테이블명으로 중첩
+  let qA = await supabase
+    .from("r3_shares")
+    .select(
+      "id, ref_code, message_id, r3_messages ( id, title, url, description )"
+    )
+    .eq("ref_code", ref)
+    .maybeSingle();
+
+  if (qA.data) {
+    share = {
+      id: qA.data.id,
+      ref_code: qA.data.ref_code,
+      message_id: qA.data.message_id,
+    };
+    const j = (qA.data as any).r3_messages;
+    if (j) {
+      msg = Array.isArray(j) ? j[0] : j;
+    }
+  }
+
+  // 시도 B: alias 로 'messages' 사용
+  if (!msg) {
+    const qB = await supabase
+      .from("r3_shares")
+      .select(
+        "id, ref_code, message_id, messages:r3_messages ( id, title, url, description )"
+      )
+      .eq("ref_code", ref)
+      .maybeSingle();
+
+    if (qB.data) {
+      share = {
+        id: qB.data.id,
+        ref_code: qB.data.ref_code,
+        message_id: qB.data.message_id,
+      };
+      const j = (qB.data as any).messages;
+      if (j) {
+        msg = Array.isArray(j) ? j[0] : j;
+      }
+    }
+  }
+
+  // ---------- 2) 조인으로 못 구했으면, message_id로 단독 조회 ----------
+  if (!share) {
+    console.error("[/r/:ref] share not found", { ref });
     return new NextResponse("Share not found", { status: 404 });
   }
 
-  // ---------- 2) message_id로 message 찾기 ----------
-  const { data: msg, error: msgErr } = await supabase
-    .from("r3_messages")
-    .select("id, title, url, description")
-    .eq("id", share.message_id)
-    .single();
+  if (!msg) {
+    if (!share.message_id) {
+      console.error("[/r/:ref] share has no message_id", { ref, share });
+      return new NextResponse("Message not found", { status: 404 });
+    }
+    const { data: m, error: mErr } = await supabase
+      .from("r3_messages")
+      .select("id, title, url, description")
+      .eq("id", share.message_id)
+      .single();
 
-  if (msgErr || !msg) {
-    console.error("[/r/:ref] message lookup failed", {
-      message_id: share.message_id,
-      msgErr,
-    });
-    return new NextResponse("Message not found", { status: 404 });
+    if (mErr || !m) {
+      console.error("[/r/:ref] message lookup failed", {
+        message_id: share.message_id,
+        mErr,
+      });
+      return new NextResponse("Message not found", { status: 404 });
+    }
+    msg = m;
   }
 
   const title = msg.title ?? "R3 Share";
