@@ -1,10 +1,13 @@
-// app/api/ogimage/route.tsx
 import { ImageResponse } from "next/og";
+import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const ref = (url.searchParams.get("shareId") || "").trim();
+
   return new ImageResponse(
     (
       <div
@@ -20,7 +23,7 @@ export async function GET() {
           fontFamily: "sans-serif",
         }}
       >
-        R3 OG Test OK
+        {ref ? `shareId = ${ref}` : "No shareId"}
       </div>
     ),
     { width: 1200, height: 630, headers: { "Cache-Control": "no-store" } }
