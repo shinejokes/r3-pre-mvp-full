@@ -40,10 +40,17 @@ export async function GET(req: NextRequest, { params }: { params: { ref: string 
     return new NextResponse("Share not found", { status: 404 });
   }
 
-  const title = share.messages.title ?? "R3 Share";
-  const targetUrl = share.messages.url;                    // 실제 이동할 원본 콘텐츠 URL
-  const desc = share.messages.description ?? "공유된 콘텐츠";
-  const ogImage = `${baseUrl}/api/ogimage?shareId=${encodeURIComponent(ref)}`; // 우리가 만든 계수기 썸네일
+// (기존)
+// const title = share.messages.title ?? "R3 Share";
+// const targetUrl = share.messages.url;
+// const desc = share.messages.description ?? "공유된 콘텐츠";
+
+// (수정)
+const msg = Array.isArray(share.messages) ? share.messages[0] : share.messages;
+const title = msg?.title ?? "R3 Share";
+const targetUrl = msg?.url ?? baseUrl; // 혹시 없을 때 대비
+const desc = msg?.description ?? "공유된 콘텐츠";
+const ogImage = `${baseUrl}/api/ogimage?shareId=${encodeURIComponent(ref)}`; // 우리가 만든 계수기 썸네일
 
   if (isPreviewBot(ua)) {
     // 2) 미리보기 봇: OG 메타 HTML 반환 (리다이렉트 금지)
