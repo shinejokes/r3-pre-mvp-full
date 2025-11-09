@@ -98,15 +98,40 @@ export async function GET(req: NextRequest) {
 }
 
 function grey(msg: string) {
-  return new ImageResponse(
-    (
-      <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
-        <rect width="1200" height="630" fill="#cfd8dc" />
-        <text x="600" y="320" textAnchor="middle" fontSize="56" fill="#111">{msg}</text>
-      </svg>
-    ),
-    { width: 1200, height: 630, headers: { "Cache-Control": "no-store" } }
-  );
+return new ImageResponse(
+  (
+    <div
+      style={{
+        width: "1200px",
+        height: "630px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "linear-gradient(135deg, #ffffff, #f5f5f5)",
+        color: "#111",
+        fontSize: 64,
+        fontWeight: "bold",
+      }}
+    >
+      <div style={{ fontSize: 72, marginBottom: 20 }}>{truncate(title, 28)}</div>
+      <div style={{ fontSize: 40, marginBottom: 20, color: "#333" }}>{truncate(subtitle, 46)}</div>
+      <div style={{ fontSize: 44 }}>
+        Share ID: <span style={{ color: "#d32f2f" }}>{ref}</span>
+      </div>
+      <div style={{ fontSize: 44, marginTop: 10 }}>
+        Views: <span style={{ color: "#1976d2" }}>{String(views)}</span>
+      </div>
+      <div style={{ fontSize: 28, marginTop: 40, color: "#888" }}>{getHost(req)}</div>
+    </div>
+  ),
+  {
+    width: 1200,
+    height: 630,
+    headers: { "Cache-Control": "no-store" },
+  }
+);
+
 }
 
 function truncate(s: string, n: number) {
