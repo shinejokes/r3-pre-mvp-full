@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { supabaseServer } from "../../../lib/supabaseServer";
 
 function getBaseUrl(req: NextRequest) {
   // Vercel/프록시 환경에서도 절대URL 생성
