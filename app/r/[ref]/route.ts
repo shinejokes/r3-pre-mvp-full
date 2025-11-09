@@ -2,19 +2,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
+/** 절대 URL 생성 (프록시/Vercel 대응) */
 function getBaseUrl(req: NextRequest) {
   const proto = req.headers.get("x-forwarded-proto") ?? "https";
   const host =
-    req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "localhost:3000";
+    req.headers.get("x-forwarded-host") ??
+    req.headers.get("host") ??
+    "localhost:3000";
   return `${proto}://${host}`;
 }
 
+/** 주요 미리보기 스크래퍼 UA 식별 */
 function isPreviewBot(ua: string) {
   return /(Kakao|facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|LinkedInBot|TelegramBot|WhatsApp|Google-Structured-Data)/i.test(
     ua
   );
 }
 
+/** 간단한 HTML escape */
 function escapeHtml(str: string) {
   return String(str)
     .replaceAll("&", "&amp;")
@@ -24,26 +29,31 @@ function escapeHtml(str: string) {
     .replaceAll("'", "&#039;");
 }
 
+/** 클라이언트 IP (프록시 헤더 기준) */
 function getClientIp(req: NextRequest) {
   const h = req.headers.get("x-forwarded-for");
   if (!h) return null;
   return h.split(",")[0]?.trim() ?? null;
 }
 
-export async function GET(req: NextRequest, { params }: { params: { ref: string } }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { ref: string } }
+) {
   const rawRef = params.ref ?? "";
   const ref = decodeURIComponent(rawRef).trim();
   const ua = req.headers.get("user-agent") || "";
   const baseUrl = getBaseUrl(req);
   const supabase = supabaseServer();
 
-  // 1) ref_code로 share 조회 (공백/대소문자 방어 포함)
+  // ---------- 1) ref_code로 share 조회 ----------
   let { data: share, error: shareErr } = await supabase
     .from("r3_shares")
     .select("id, ref_code, message_id, created_at")
     .eq("ref_code", ref)
     .maybeSingle();
 
+  // 대소문자/공백 방어 재시도
   if (!share && !shareErr) {
     const { data: share2 } = await supabase
       .from("r3_shares")
@@ -61,10 +71,8 @@ export async function GET(req: NextRequest, { params }: { params: { ref: string 
     return new NextResponse("Share not found", { status: 404 });
   }
 
-  // ⬇️ 빠졌던 줄: message_id를 mid로 정규화
+  // ---------- 2) message 조회 (origin_url 폴백 지원) ----------
   const mid = (share.message_id ?? "").toString().trim();
-
-  // 2) message 조회 (origin_url까지 읽기)
   const { data: msg, error: msgErr } = await supabase
     .from("r3_messages")
     .select("id, title, url, origin_url, description")
@@ -84,7 +92,7 @@ export async function GET(req: NextRequest, { params }: { params: { ref: string 
   const desc = msg.description ?? "공유된 콘텐츠";
   const ogImage = `${baseUrl}/api/ogimage?shareId=${encodeURIComponent(ref)}`;
 
-  // 3) 미리보기 봇이면 OG 메타 HTML 반환
+  // ---------- 3) 미리보기 봇: OG 메타 HTML 반환 ----------
   if (isPreviewBot(ua)) {
     const html = `<!doctype html>
 <html lang="ko"><head>
@@ -111,25 +119,25 @@ export async function GET(req: NextRequest, { params }: { params: { ref: string 
     });
   }
 
-// 4) 일반 사용자면 hits 기록 후 리다이렉트
-try {
-  // r3_hits 스키마: id(bigint), share_id(text), created_at(timestamptz), viewer_fingerprint(text)
-  const shareIdText = (share.id ?? "").toString().trim();
+  // ---------- 4) 일반 사용자: 히트 기록 후 리다이렉트 ----------
+  try {
+    const shareIdText = (share.id ?? "").toString().trim(); // r3_hits.share_id는 text
+    const fp = `${getClientIp(req) ?? "noip"}|${ua.slice(0, 160)}`;
 
-  const { error: insErr } = await supabase.from("r3_hits").insert({
-    share_id: shareIdText,
-    viewer_fingerprint: `${getClientIp(req) ?? "noip"}|${ua.slice(0, 160)}`,
-  });
+    const { error: insErr } = await supabase.from("r3_hits").insert({
+      share_id: shareIdText,
+      viewer_fingerprint: fp,
+    });
 
-  if (insErr) {
-    console.error("[/r/:ref] hits insert failed", { ref, insErr: String(insErr), shareIdText });
-  }
-} catch (e) {
-  console.error("[/r/:ref] hits insert try/catch error", { ref, error: String(e) });
-}
-
+    if (insErr) {
+      console.error("[/r/:ref] hits insert failed", {
+        ref,
+        insErr: String(insErr),
+        shareIdText,
+      });
+    }
   } catch (e) {
-    console.error("[/r/:ref] hits insert failed", { ref, error: String(e) });
+    console.error("[/r/:ref] hits insert try/catch error", { ref, error: String(e) });
   }
 
   return NextResponse.redirect(targetUrl, { status: 302 });
