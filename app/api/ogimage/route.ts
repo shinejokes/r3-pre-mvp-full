@@ -1,15 +1,8 @@
-// app/api/ogimage/route.ts
 import { NextRequest } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import sharp from 'sharp';
-// Supabase 서버 클라이언트 (자네 프로젝트의 경로에 맞춰 사용)
-// 기존
-// import { supabaseServer } from '@/lib/supabaseServer';
-
-// 변경 (프로젝트 구조가 보통 이렇다면)
 import { supabaseServer } from '../../../lib/supabaseServer';
-
 
 export const runtime = 'nodejs';
 
@@ -26,7 +19,6 @@ function escapeXml(s: string) {
   );
 }
 
-// public/fonts/NotoSansKR-Regular.ttf → base64로 읽어서 SVG에 임베드
 async function loadFontBase64(): Promise<string> {
   const fontPath = path.join(process.cwd(), 'public', 'fonts', 'NotoSansKR-Regular.ttf');
   const buf = await fs.readFile(fontPath);
@@ -43,7 +35,6 @@ function svgTemplate(params: { title: string; views: number; ref: string; fontB6
       <stop offset="100%" stop-color="#22c55e"/>
     </linearGradient>
   </defs>
-
   <style><![CDATA[
     @font-face {
       font-family: 'NotoSansKR';
@@ -56,10 +47,8 @@ function svgTemplate(params: { title: string; views: number; ref: string; fontB6
     .ref   { font-family: 'NotoSansKR', sans-serif; font-size: 34px; fill: #334155; }
     .brand { font-family: 'NotoSansKR', sans-serif; font-size: 30px; fill: #475569; }
   ]]></style>
-
   <rect width="100%" height="100%" fill="url(#g)"/>
   <rect x="60" y="60" rx="28" ry="28" width="${WIDTH - 120}" height="${HEIGHT - 120}" fill="white" opacity="0.9"/>
-
   <text x="100" y="230" class="title">${escapeXml(title).slice(0, 80)}</text>
   <text x="100" y="330" class="views">Views: ${views.toLocaleString()}</text>
   <text x="100" y="400" class="ref">Ref: ${escapeXml(ref)}</text>
@@ -75,34 +64,34 @@ export async function GET(req: NextRequest) {
 
     const sb = supabaseServer();
 
-    // 1) 제목 가져오기 (r3_shares.title)
-    //    - ref_code 컬럼명은 자네 DB에 맞춰 사용. 필요하면 eq('ref', ref)로 바꾸면 됨.
-    const { data: share, error: shareErr } = await sb
+    const { data: share } = await sb
       .from('r3_shares')
       .select('title, ref_code')
       .eq('ref_code', ref)
       .maybeSingle();
 
-    if (shareErr) console.warn('[ogimage] share select warn:', shareErr);
-
     const title = share?.title ?? 'Untitled';
 
-    // 2) 조회수 집계 (r3_hits에서 ref_code=ref 카운트)
-    //    - 컬럼명이 다르면 .eq('share_ref', ref) 로 바꾸면 됨.
-    const { count: views, error: countErr } = await sb
+    const { count: views } = await sb
       .from('r3_hits')
       .select('*', { count: 'exact', head: true })
       .eq('ref_code', ref);
 
-    if (countErr) console.warn('[ogimage] hits count warn:', countErr);
     const viewCount = typeof views === 'number' ? views : 0;
 
-    // 3) SVG 생성 후 Sharp로 PNG 변환
     const fontB64 = await loadFontBase64();
     const svg = svgTemplate({ title, views: viewCount, ref, fontB64 });
+
+    // SVG → PNG
     const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
 
-    return new Response(pngBuffer, {
+    // ✅ Buffer → ArrayBuffer (또는 Uint8Array)로 변환하여 타입 에러 제거
+    const pngArrayBuffer = pngBuffer.buffer.slice(
+      pngBuffer.byteOffset,
+      pngBuffer.byteOffset + pngBuffer.byteLength
+    );
+
+    return new Response(pngArrayBuffer, {
       status: 200,
       headers: {
         'Content-Type': 'image/png',
