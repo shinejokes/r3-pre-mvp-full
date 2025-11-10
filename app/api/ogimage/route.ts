@@ -12,17 +12,17 @@ const HEIGHT = 630;
 
 // ---------- 텍스트 → Path 유틸 ----------
 type TextPathOptions = {
-  x: number;         // 시작 x (좌상단 아님, 베이스라인 기준)
+  x: number;         // 베이스라인 시작 x
   y: number;         // 베이스라인 y
   fontSize: number;  // px
   letterSpacing?: number; // px
-  fill?: string;
   font: Font;
 };
 
+// ✅ Buffer → ArrayBuffer (항상 ArrayBuffer 되도록 복사)
 function toArrayBuffer(buf: Buffer): ArrayBuffer {
-  // ✅ Buffer를 올바르게 ArrayBuffer로 잘라서 전달
-  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  const copy = new Uint8Array(buf);   // Buffer는 Uint8Array의 서브클래스 → 복사 생성
+  return copy.buffer;                 // 항상 ArrayBuffer
 }
 
 function textToPathD(text: string, opt: TextPathOptions) {
@@ -35,7 +35,6 @@ function textToPathD(text: string, opt: TextPathOptions) {
 
   for (const ch of text) {
     const g = font.charToGlyph(ch);
-    // 커닝 보정 (영문/숫자에 특히 유효, 한글도 폰트에 따라 일부 적용)
     if (prev) {
       const kern = font.getKerningValue(prev, g) * scale;
       dx += kern;
@@ -79,39 +78,16 @@ export async function GET(req: NextRequest) {
 
     const viewCount = typeof views === 'number' ? views : 0;
 
-    // 🔤 한글 폰트 로드 (Buffer→ArrayBuffer 변환을 정확히!)
+    // 🔤 한글 폰트 로드 (Buffer → ArrayBuffer 정확 변환)
     const fontPath = path.join(process.cwd(), 'public', 'fonts', 'NotoSansKR-Regular.ttf');
     const fontBuf = await fs.readFile(fontPath);
-    const font = opentype.parse(toArrayBuffer(fontBuf)); // ← 핵심 수정
+    const font = opentype.parse(toArrayBuffer(fontBuf));
 
     // 텍스트를 path로 변환
-    const titleD = textToPathD(title, {
-      x: 100,
-      y: 230,
-      fontSize: 56,
-      font,
-    });
-
-    const viewsD = textToPathD(`Views: ${viewCount.toLocaleString()}`, {
-      x: 100,
-      y: 330,
-      fontSize: 40,
-      font,
-    });
-
-    const refD = textToPathD(`Ref: ${ref}`, {
-      x: 100,
-      y: 400,
-      fontSize: 34,
-      font,
-    });
-
-    const brandD = textToPathD('R3 • Pre-MVP', {
-      x: 100,
-      y: HEIGHT - 120,
-      fontSize: 30,
-      font,
-    });
+    const titleD = textToPathD(title, { x: 100, y: 230, fontSize: 56, font });
+    const viewsD = textToPathD(`Views: ${viewCount.toLocaleString()}`, { x: 100, y: 330, fontSize: 40, font });
+    const refD   = textToPathD(`Ref: ${ref}`, { x: 100, y: 400, fontSize: 34, font });
+    const brandD = textToPathD('R3 • Pre-MVP', { x: 100, y: HEIGHT - 120, fontSize: 30, font });
 
     // SVG (모든 텍스트는 <path>)
     const svg = `
