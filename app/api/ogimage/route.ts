@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import sharp from 'sharp';
+import opentype, { Font, Glyph } from 'opentype.js';
 import { supabaseServer } from '../../../lib/supabaseServer';
 
 export const runtime = 'nodejs';
@@ -9,52 +10,49 @@ export const runtime = 'nodejs';
 const WIDTH = 1200;
 const HEIGHT = 630;
 
-function escapeXml(s: string) {
-  return s.replace(/[<>&'"]/g, (c) =>
-    c === '<' ? '&lt;' :
-    c === '>' ? '&gt;' :
-    c === '&' ? '&amp;' :
-    c === '"' ? '&quot;' :
-    '&#39;'
-  );
+// ---------- 텍스트 → Path 유틸 ----------
+type TextPathOptions = {
+  x: number;         // 시작 x (좌상단 아님, 베이스라인 기준)
+  y: number;         // 베이스라인 y
+  fontSize: number;  // px
+  letterSpacing?: number; // px
+  fill?: string;
+  font: Font;
+};
+
+function toArrayBuffer(buf: Buffer): ArrayBuffer {
+  // ✅ Buffer를 올바르게 ArrayBuffer로 잘라서 전달
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 }
 
-async function loadFontBase64(): Promise<string> {
-  const fontPath = path.join(process.cwd(), 'public', 'fonts', 'NotoSansKR-Regular.ttf');
-  const buf = await fs.readFile(fontPath);
-  return buf.toString('base64');
-}
+function textToPathD(text: string, opt: TextPathOptions) {
+  const { x, y, fontSize, letterSpacing = 0, font } = opt;
+  const scale = fontSize / font.unitsPerEm;
 
-function svgTemplate(params: { title: string; views: number; ref: string; fontB64: string }) {
-  const { title, views, ref, fontB64 } = params;
-  return `
-<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0ea5e9"/>
-      <stop offset="100%" stop-color="#22c55e"/>
-    </linearGradient>
-  </defs>
-  <style><![CDATA[
-    @font-face {
-      font-family: 'NotoSansKR';
-      src: url('data:font/ttf;base64,${fontB64}') format('truetype');
-      font-weight: 400;
-      font-style: normal;
+  let dx = 0;
+  let prev: Glyph | null = null;
+  const parts: string[] = [];
+
+  for (const ch of text) {
+    const g = font.charToGlyph(ch);
+    // 커닝 보정 (영문/숫자에 특히 유효, 한글도 폰트에 따라 일부 적용)
+    if (prev) {
+      const kern = font.getKerningValue(prev, g) * scale;
+      dx += kern;
     }
-    .title { font-family: 'NotoSansKR', sans-serif; font-size: 56px; font-weight: 700; fill: #0f172a; }
-    .views { font-family: 'NotoSansKR', sans-serif; font-size: 40px; font-weight: 600; fill: #1e293b; }
-    .ref   { font-family: 'NotoSansKR', sans-serif; font-size: 34px; fill: #334155; }
-    .brand { font-family: 'NotoSansKR', sans-serif; font-size: 30px; fill: #475569; }
-  ]]></style>
-  <rect width="100%" height="100%" fill="url(#g)"/>
-  <rect x="60" y="60" rx="28" ry="28" width="${WIDTH - 120}" height="${HEIGHT - 120}" fill="white" opacity="0.9"/>
-  <text x="100" y="230" class="title">${escapeXml(title).slice(0, 80)}</text>
-  <text x="100" y="330" class="views">Views: ${views.toLocaleString()}</text>
-  <text x="100" y="400" class="ref">Ref: ${escapeXml(ref)}</text>
-  <text x="100" y="${HEIGHT - 120}" class="brand">R3 • Pre-MVP</text>
-</svg>`;
+    const p = g.getPath(x + dx, y, fontSize);
+    parts.push(p.toPathData());
+    const adv = g.advanceWidth * scale;
+    dx += adv + letterSpacing;
+    prev = g;
+  }
+  return parts.join(' ');
 }
+
+function safeText(s: unknown, max = 120) {
+  return (s ?? '').toString().slice(0, max);
+}
+// ---------------------------------------
 
 export async function GET(req: NextRequest) {
   try {
@@ -71,7 +69,7 @@ export async function GET(req: NextRequest) {
       .eq('ref_code', ref)
       .maybeSingle();
 
-    const title = share?.title ?? 'Untitled';
+    const title = safeText(share?.title ?? 'Untitled');
 
     // 조회수
     const { count: views } = await sb
@@ -81,15 +79,69 @@ export async function GET(req: NextRequest) {
 
     const viewCount = typeof views === 'number' ? views : 0;
 
-    // SVG → PNG
-    const fontB64 = await loadFontBase64();
-    const svg = svgTemplate({ title, views: viewCount, ref, fontB64 });
+    // 🔤 한글 폰트 로드 (Buffer→ArrayBuffer 변환을 정확히!)
+    const fontPath = path.join(process.cwd(), 'public', 'fonts', 'NotoSansKR-Regular.ttf');
+    const fontBuf = await fs.readFile(fontPath);
+    const font = opentype.parse(toArrayBuffer(fontBuf)); // ← 핵심 수정
+
+    // 텍스트를 path로 변환
+    const titleD = textToPathD(title, {
+      x: 100,
+      y: 230,
+      fontSize: 56,
+      font,
+    });
+
+    const viewsD = textToPathD(`Views: ${viewCount.toLocaleString()}`, {
+      x: 100,
+      y: 330,
+      fontSize: 40,
+      font,
+    });
+
+    const refD = textToPathD(`Ref: ${ref}`, {
+      x: 100,
+      y: 400,
+      fontSize: 34,
+      font,
+    });
+
+    const brandD = textToPathD('R3 • Pre-MVP', {
+      x: 100,
+      y: HEIGHT - 120,
+      fontSize: 30,
+      font,
+    });
+
+    // SVG (모든 텍스트는 <path>)
+    const svg = `
+<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+    <style>
+      .card { fill: white; opacity: .9 }
+      .title { fill: #0f172a }
+      .views { fill: #1e293b }
+      .ref   { fill: #334155 }
+      .brand { fill: #475569 }
+    </style>
+  </defs>
+
+  <rect width="100%" height="100%" fill="url(#g)"/>
+  <rect x="60" y="60" rx="28" ry="28" width="${WIDTH - 120}" height="${HEIGHT - 120}" class="card"/>
+
+  <path d="${titleD}" class="title"/>
+  <path d="${viewsD}" class="views"/>
+  <path d="${refD}"   class="ref"/>
+  <path d="${brandD}" class="brand"/>
+</svg>`.trim();
+
     const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
 
-    // ✅ 타입 안전: Uint8Array로 전달
-    const body = new Uint8Array(pngBuffer);
-
-    return new Response(body, {
+    return new Response(new Uint8Array(pngBuffer), {
       status: 200,
       headers: {
         'Content-Type': 'image/png',
