@@ -1,7 +1,6 @@
 // app/r/[ref]/page.tsx
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { supabaseServer } from '../../../lib/supabaseServer';
 
 export const dynamic = 'force-dynamic';
@@ -13,13 +12,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const og = `${base}/api/ogimage?shareId=${params.ref}`;
   return {
     title: 'R3 Link',
-    openGraph: {
-      images: [{ url: og, width: 1200, height: 630 }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      images: [og],
-    },
+    openGraph: { images: [{ url: og, width: 1200, height: 630 }] },
+    twitter: { card: 'summary_large_image', images: [og] },
   };
 }
 
@@ -27,50 +21,45 @@ export default async function RRedirectPage({ params }: Params) {
   const ref = params.ref;
   const sb = supabaseServer();
 
-  // 1) 리다이렉트 대상 URL 조회
-  const { data: share } = await sb
+  // 1) 대상 URL 조회 (shares → target_url, 없으면 messages.url)
+  const { data: share, error: shareErr } = await sb
     .from('r3_shares')
-    .select('target_url, message_id')
+    .select('id, target_url, message_id')
     .eq('ref_code', ref)
     .maybeSingle();
+
+  if (shareErr) console.error('[redirect] share select error:', shareErr);
 
   let target = share?.target_url as string | undefined;
 
   if (!target && share?.message_id) {
-    const { data: msg } = await sb
+    const { data: msg, error: msgErr } = await sb
       .from('r3_messages')
       .select('url')
       .eq('id', share.message_id)
       .maybeSingle();
+    if (msgErr) console.warn('[redirect] message select warn:', msgErr);
     target = msg?.url ?? undefined;
   }
 
   if (!target) {
     console.warn('[redirect] target url not found for ref:', ref);
-    redirect('/'); // 안전장치
+    redirect('/');
   }
 
-  // 2) 조회수 +1 (봇/프리페치/미리보기 제외)
+  // 2) 조회수 +1 (테스트용: 필터 없이 확실히 기록)
   try {
-    const h = headers();
-    const ua = (h.get('user-agent') || '').toLowerCase();
-    const purpose = (h.get('purpose') || '').toLowerCase();          // chrome old
-    const secPurpose = (h.get('sec-purpose') || '').toLowerCase();   // chrome new
-    const isPrefetch =
-      purpose.includes('prefetch') || secPurpose.includes('prefetch') || secPurpose.includes('prerender');
+    const { error: insertErr } = await sb
+      .from('r3_hits')
+      .insert({ ref_code: ref }) // ← 우리 카운트 쿼리와 동일 컬럼 사용
+      .select()
+      .single(); // 서버에서 확정 실행 + 에러 확인
 
-    const isBot = /bot|crawl|spider|slurp|facebookexternalhit|embedly|pinterest|quora link preview|slackbot|twitterbot|whatsapp|telegrambot|discordbot|linkedinbot|vkshare|skypeuripreview/i.test(
-      ua
-    );
-
-    if (!isBot && !isPrefetch) {
-      // 스키마에 ref_code만 있어도 동작합니다.
-      await sb.from('r3_hits').insert({ ref_code: ref });
-      // 메타데이터를 저장하고 싶다면, 컬럼이 있을 때만 사용:
-      // await sb.from('r3_hits').insert({ ref_code: ref, user_agent: ua, referer: h.get('referer') ?? null });
+    if (insertErr) {
+      console.error('[hits] insert error:', insertErr);
     }
   } catch (e) {
-    console.warn('[hits] insert skipped:', e);
+    console.error('[hits] insert exception:', e);
   }
 
   // 3) 외부로 리다이렉트
