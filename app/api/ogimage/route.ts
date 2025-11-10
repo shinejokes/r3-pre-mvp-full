@@ -62,11 +62,12 @@ export async function GET(req: NextRequest) {
     const sb = supabaseServer();
 
     // 제목
-    const { data: share } = await sb
-      .from('r3_shares')
-      .select('title, ref_code')
-      .eq('ref_code', ref)
-      .maybeSingle();
+const { data: share } = await sb
+  .from('r3_shares')
+  .select('id, title, ref_code')  // ✅ id 추가
+  .eq('ref_code', ref)
+  .maybeSingle();
+
 
     const title = safeText(share?.title ?? 'Untitled');
 
