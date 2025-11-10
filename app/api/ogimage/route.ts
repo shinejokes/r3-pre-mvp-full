@@ -4,7 +4,12 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import sharp from 'sharp';
 // Supabase 서버 클라이언트 (자네 프로젝트의 경로에 맞춰 사용)
-import { supabaseServer } from '@/lib/supabaseServer';
+// 기존
+// import { supabaseServer } from '@/lib/supabaseServer';
+
+// 변경 (프로젝트 구조가 보통 이렇다면)
+import { supabaseServer } from '../../../lib/supabaseServer';
+
 
 export const runtime = 'nodejs';
 

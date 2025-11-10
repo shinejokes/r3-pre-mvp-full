@@ -1,7 +1,12 @@
 // app/r/[ref]/page.tsx
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { supabaseServer } from '@/lib/supabaseServer';
+// 기존
+// import { supabaseServer } from '@/lib/supabaseServer';
+
+// 변경
+import { supabaseServer } from '../../../lib/supabaseServer';
+
 
 export const dynamic = 'force-dynamic'; // ref별 동적 처리
 
