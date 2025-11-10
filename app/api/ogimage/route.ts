@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     const { count: views } = await sb
       .from('r3_hits')
       .select('*', { count: 'exact', head: true })
-      .eq('ref_code', ref);
+      .eq('share_id', share!.id);  
 
     const viewCount = typeof views === 'number' ? views : 0;
 
