@@ -8,15 +8,34 @@ export const dynamic = 'force-dynamic';
 
 type Params = { params: { ref: string } };
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || '';
-  const og = `${base}/api/ogimage?shareId=${params.ref}`;
+// 🔸 이 부분만 통째로 교체
+export async function generateMetadata({ params }: { params: { ref: string } }) {
+  const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://r3-pre-mvp-full.vercel.app';
+  const ref = params.ref;
+  const v = Math.floor(Date.now() / 60000); // 1분 단위 캐시버스터
+
+  const og = `${base}/api/ogimage?shareId=${ref}&v=${v}`;
+  const pageUrl = `${base}/r/${ref}`;
+
   return {
     title: 'R3 Link',
-    openGraph: { images: [{ url: og, width: 1200, height: 630 }] },
-    twitter: { card: 'summary_large_image', images: [og] },
+    openGraph: {
+      title: 'R3 Link',
+      description: `ref: ${ref}`,
+      url: pageUrl,
+      images: [{ url: og, width: 1200, height: 630 }],
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'R3 Link',
+      description: `ref: ${ref}`,
+      images: [og],
+    },
+    alternates: { canonical: pageUrl },
   };
 }
+
 
 export default async function RPreviewAndRedirect({ params }: Params) {
   const ref = params.ref;
