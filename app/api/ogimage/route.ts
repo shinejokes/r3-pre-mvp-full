@@ -64,6 +64,7 @@ export async function GET(req: NextRequest) {
 
     const sb = supabaseServer();
 
+    // 제목
     const { data: share } = await sb
       .from('r3_shares')
       .select('title, ref_code')
@@ -72,6 +73,7 @@ export async function GET(req: NextRequest) {
 
     const title = share?.title ?? 'Untitled';
 
+    // 조회수
     const { count: views } = await sb
       .from('r3_hits')
       .select('*', { count: 'exact', head: true })
@@ -79,19 +81,15 @@ export async function GET(req: NextRequest) {
 
     const viewCount = typeof views === 'number' ? views : 0;
 
+    // SVG → PNG
     const fontB64 = await loadFontBase64();
     const svg = svgTemplate({ title, views: viewCount, ref, fontB64 });
-
-    // SVG → PNG
     const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
 
-    // ✅ Buffer → ArrayBuffer (또는 Uint8Array)로 변환하여 타입 에러 제거
-    const pngArrayBuffer = pngBuffer.buffer.slice(
-      pngBuffer.byteOffset,
-      pngBuffer.byteOffset + pngBuffer.byteLength
-    );
+    // ✅ 타입 안전: Uint8Array로 전달
+    const body = new Uint8Array(pngBuffer);
 
-    return new Response(pngArrayBuffer, {
+    return new Response(body, {
       status: 200,
       headers: {
         'Content-Type': 'image/png',
