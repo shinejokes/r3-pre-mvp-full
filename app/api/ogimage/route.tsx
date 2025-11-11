@@ -1,10 +1,8 @@
-// app/api/ogimage/route.tsx
+/* eslint-disable react/jsx-key */
 import { ImageResponse } from "next/og";
-
 export const runtime = "edge";
-export const contentType = "image/png";
-export const size = { width: 1200, height: 630 };
 
+// 1200x630, PNG
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const shareId = searchParams.get("shareId") || "unknown";
@@ -18,18 +16,33 @@ export async function GET(req: Request) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "system-ui, Segoe UI, Arial",
-          fontSize: 56,
           background: "white",
         }}
       >
-        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-          <div style={{ fontWeight: 800 }}>R3</div>
-          <div>|</div>
-          <div>share: {shareId}</div>
+        <div
+          style={{
+            fontSize: 56,
+            lineHeight: 1.2,
+            fontWeight: 700,
+            fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, sans-serif",
+            textAlign: "center",
+            padding: "48px 80px",
+            border: "8px solid black",
+          }}
+        >
+          R3 공유 링크
+          <div
+            style={{
+              marginTop: 24,
+              fontSize: 36,
+              fontWeight: 500,
+            }}
+          >
+            shareId: {shareId}
+          </div>
         </div>
       </div>
     ),
-    size
+    { width: 1200, height: 630 }
   );
 }

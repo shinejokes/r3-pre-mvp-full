@@ -1,8 +1,9 @@
-// app/middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export const config = { matcher: ["/r/:path*"] };
+export const config = {
+  matcher: ["/r/:path*"],
+};
 
 export function middleware(req: NextRequest) {
   const ua = req.headers.get("user-agent") || "";
