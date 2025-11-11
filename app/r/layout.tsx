@@ -1,14 +1,10 @@
 // app/r/layout.tsx
 import React from "react";
 
-export default function RLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
-      <body style={{ margin: 0, fontFamily: "sans-serif" }}>
+      <body style={{ margin: 0, fontFamily: "system-ui, sans-serif" }}>
         {children}
       </body>
     </html>
