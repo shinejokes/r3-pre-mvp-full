@@ -1,115 +1,77 @@
 // app/r/[ref]/page.tsx
-import type { Metadata } from 'next';
-import Script from 'next/script';
-import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import type { Metadata, ResolvingMetadata } from 'next';
 import { supabaseServer } from '../../../lib/supabaseServer';
 
-export const dynamic = 'force-dynamic';
+const baseUrl =
+  process.env.R3_APP_BASE_URL?.replace(/\/$/, '') ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
-type Params = { params: { ref: string } };
+type Props = { params: Promise<{ ref: string }> }; // ← Promise 타입으로 변경
 
-// 🔸 이 부분만 통째로 교체
-export async function generateMetadata({ params }: { params: { ref: string } }) {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://r3-pre-mvp-full.vercel.app';
-  const ref = params.ref;
-  const v = Math.floor(Date.now() / 60000); // 1분 단위 캐시버스터
-
-  const og = `${base}/api/ogimage?shareId=${ref}&v=${v}`;
-  const pageUrl = `${base}/r/${ref}`;
+// 1) 메타데이터 생성
+export async function generateMetadata(
+  { params }: Props,
+  _parent: ResolvingMetadata
+): Promise<Metadata> {
+  const { ref: shareId } = await params; // ✅ await으로 언랩
+  const ogImageUrl = `${baseUrl}/api/ogimage?shareId=${encodeURIComponent(shareId)}`;
 
   return {
-    title: 'R3 Link',
+    title: 'R3 공유 미리보기',
+    description: 'R3 공유 링크',
     openGraph: {
-      title: 'R3 Link',
-      description: `ref: ${ref}`,
-      url: pageUrl,
-      images: [{ url: og, width: 1200, height: 630 }],
-      type: 'article',
+      type: 'website',
+      title: 'R3 공유 미리보기',
+      description: 'R3 공유 링크',
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: 'R3 Share Preview' }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'R3 Link',
-      description: `ref: ${ref}`,
-      images: [og],
+      title: 'R3 공유 미리보기',
+      description: 'R3 공유 링크',
+      images: [ogImageUrl],
     },
-    alternates: { canonical: pageUrl },
+    metadataBase: new URL(baseUrl),
   };
 }
 
+// 2) 실제 리다이렉트 처리
+export default async function ShareRedirectPage({ params }: Props) {
+  const { ref } = await params; // ✅ await으로 언랩
 
-export default async function RPreviewAndRedirect({ params }: Params) {
-  const ref = params.ref;
   const sb = supabaseServer();
 
-  // 대상 URL 조회
-  const { data: share } = await sb
+  const { data: share, error: shareErr } = await sb
     .from('r3_shares')
-    .select('id, target_url, message_id')
+    .select('id, message_id, original_url, title')
     .eq('ref_code', ref)
-    .maybeSingle();
+    .single();
 
-  let target = share?.target_url as string | undefined;
+  if (shareErr || !share) {
+    redirect('/');
+  }
 
-  if (!target && share?.message_id) {
+  let targetUrl = share.original_url ?? '';
+
+  if (!targetUrl && share.message_id) {
     const { data: msg } = await sb
       .from('r3_messages')
-      .select('url')
+      .select('*')
       .eq('id', share.message_id)
       .maybeSingle();
-    target = msg?.url ?? undefined;
-  }
 
-  if (!target || !share?.id) {
-    // 안전장치: 대상이 없으면 홈으로 안내
-    return (
-      <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
-        <h1>링크를 찾을 수 없어요</h1>
-        <p>ref: {ref}</p>
-      </div>
-    );
-  }
-
-  // 봇/프리페치 제외하고 서버에서 조회수 +1
-  try {
-    const h = headers();
-    const ua = (h.get('user-agent') || '').toLowerCase();
-    const purpose = (h.get('purpose') || '').toLowerCase();
-    const secPurpose = (h.get('sec-purpose') || '').toLowerCase();
-    const isPrefetch =
-      purpose.includes('prefetch') || secPurpose.includes('prefetch') || secPurpose.includes('prerender');
-    const isBot = /bot|crawl|spider|slurp|facebookexternalhit|embedly|pinterest|quora link preview|slackbot|twitterbot|whatsapp|telegrambot|discordbot|linkedinbot|vkshare|skypeuripreview/i.test(
-      ua
-    );
-
-    if (!isBot && !isPrefetch) {
-      await sb.from('r3_hits').insert({ share_id: share.id }).select().single();
+    if (msg) {
+      targetUrl =
+        msg.origin_url ||
+        msg.original_url ||
+        msg.url ||
+        msg.link ||
+        msg.link_url ||
+        '';
     }
-  } catch (e) {
-    console.warn('[hits] insert skipped:', e);
   }
 
-  // 여기서는 200 OK로 페이지를 렌더 (OG 메타는 generateMetadata에서 이미 부착됨)
-  // 사람은 JS로 즉시 원본으로 이동, 크롤러는 JS 실행 안 하므로 우리 썸네일을 읽음
-  return (
-    <html lang="ko">
-      <body style={{ margin: 0, fontFamily: 'system-ui, sans-serif' }}>
-        <div style={{ padding: 24 }}>
-          <h1 style={{ marginBottom: 8 }}>잠시만요… 원본으로 이동 중입니다</h1>
-          <p>
-            열리지 않으면 <a href={target}>여기를 클릭</a>하세요.
-          </p>
-        </div>
-
-        {/* JS 즉시 이동 (사용자용) */}
-        <Script id="r3-client-redirect" strategy="afterInteractive">
-          {`window.location.replace(${JSON.stringify(target)});`}
-        </Script>
-
-        {/* JS 꺼진 사용자를 위한 매우 짧은 meta-refresh 대안 */}
-        <noscript>
-          <meta httpEquiv="refresh" content={`0;url=${target}`} />
-        </noscript>
-      </body>
-    </html>
-  );
+  if (!targetUrl) targetUrl = '/';
+  redirect(targetUrl);
 }
