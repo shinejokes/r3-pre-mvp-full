@@ -3,8 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export const config = {
-  // /r/ 경로만 감지
-  matcher: ["/r/:path*"],
+  matcher: ["/r/:path*"], // /r/* 만 감지
 };
 
 export function middleware(req: NextRequest) {
@@ -12,13 +11,11 @@ export function middleware(req: NextRequest) {
   const isKakao = /Kakao|Kakaotalk|KakaoScrap/i.test(ua);
   const pv = req.nextUrl.searchParams.get("pv");
 
-  // KakaoScrap이거나 ?pv=2 로 오면 프리뷰 모드 헤더 주입
+  // KakaoScrap 또는 ?pv=2 이면 프리뷰 모드 강제
   if (isKakao || pv === "2") {
     const requestHeaders = new Headers(req.headers);
-    requestHeaders.set("x-r3-preview", "1"); // 페이지/metadata에서 읽어 사용
-    return NextResponse.next({
-      request: { headers: requestHeaders },
-    });
+    requestHeaders.set("x-r3-preview", "1");
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   return NextResponse.next();
