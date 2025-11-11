@@ -10,13 +10,19 @@ const baseUrl =
 
 type Props = { params: Promise<{ ref: string }> };
 
-// 1) 메타데이터 생성 (카카오/페북 미리보기용)
+// ─────────────────────────────────────────────────────────────
+// 1) 메타데이터 생성 (카카오/페북/디스코드 등 미리보기용)
+//    - 캐시버스터: 1시간 단위로 t 파라미터 변경 → 썸네일 갱신 유도
+// ─────────────────────────────────────────────────────────────
 export async function generateMetadata(
   { params }: Props,
   _parent: ResolvingMetadata
 ): Promise<Metadata> {
   const { ref: shareId } = await params;
-  const ogImageUrl = `${baseUrl}/api/ogimage?shareId=${encodeURIComponent(shareId)}`;
+  const hourToken = Math.floor(Date.now() / 3_600_000); // 1시간 단위
+  const ogImageUrl = `${baseUrl}/api/ogimage?shareId=${encodeURIComponent(
+    shareId
+  )}&t=${hourToken}`;
 
   return {
     title: 'R3 공유 링크',
@@ -37,19 +43,26 @@ export async function generateMetadata(
   };
 }
 
-// 봇(User-Agent) 판별
+// ─────────────────────────────────────────────────────────────
+//  봇(User-Agent) 판별
+//  - KakaoScrap(디버거), KakaoTalk/Story, 기타 대표 봇 포함
+// ─────────────────────────────────────────────────────────────
 function isBot(ua: string) {
-  return /kakaotalk|kakaostory|facebookexternalhit|twitterbot|slackbot|discordbot|linkedinbot|embedly|quora|pinterest|vkshare|telegrambot|applebot|whatsapp|bingpreview|google.*snippet/i.test(
+  return /kakaoscrap|kakaotalk|kakaostory|kakao|facebookexternalhit|twitterbot|slackbot|discordbot|linkedinbot|embedly|quora|pinterest|vkshare|telegrambot|applebot|whatsapp|bingpreview|google.*snippet|bot|crawler|spider/i.test(
     ua
   );
 }
 
-// 2) 실제 페이지 — 봇이면 미리보기, 사람이면 즉시 리다이렉트
+// ─────────────────────────────────────────────────────────────
+// 2) 페이지 동작
+//    - 봇: 200 OK + OG 메타만 제공 (미리보기용)
+//    - 사람: 즉시 원본으로 redirect
+// ─────────────────────────────────────────────────────────────
 export default async function ShareRedirectPage({ params }: Props) {
   const { ref } = await params;
   const sb = supabaseServer();
 
-  // 2-1) Supabase에서 share 찾기
+  // 2-1) share 조회
   const { data: share } = await sb
     .from('r3_shares')
     .select('id, message_id, original_url, title')
@@ -78,7 +91,7 @@ export default async function ShareRedirectPage({ params }: Props) {
   }
   if (!targetUrl) targetUrl = '/';
 
-  // 2-3) 봇은 미리보기(200), 사람은 리다이렉트
+  // 2-3) UA 판별 → 사람은 즉시 리다이렉트, 봇은 200 OK
   const h = await headers();
   const ua = h.get('user-agent') || '';
 
@@ -86,7 +99,7 @@ export default async function ShareRedirectPage({ params }: Props) {
     redirect(targetUrl);
   }
 
-  // 봇에게는 간단한 HTML 반환 (200 OK)
+  // (봇 전용) 간단한 미리보기 페이지 반환
   return (
     <html lang="ko">
       <body style={{ margin: 0, fontFamily: 'sans-serif', padding: 24 }}>
