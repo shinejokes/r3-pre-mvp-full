@@ -1,7 +1,8 @@
 // app/r/[ref]/page.tsx
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { supabaseServer } from "../lib/supabaseServer";
+// ✅ 두 단계 올라가서 루트의 lib로
+import { supabaseServer } from "../../lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
