@@ -1,11 +1,12 @@
 // app/api/ogimage/route.tsx
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge"; // 권장: OG는 edge가 빠름
+export const runtime = "edge";
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const shareId = searchParams.get("shareId") ?? "unknown";
+  const url = new URL(req.url);
+  const shareIdParam = url.searchParams.get("shareId");
+  const shareId = shareIdParam ?? "unknown";
 
   return new ImageResponse(
     (
@@ -16,13 +17,21 @@ export async function GET(req: Request) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 72,
+          fontSize: 64,
           fontFamily: "system-ui, Segoe UI, Helvetica, Arial",
         }}
       >
-        R3 • {shareId}
+        R3 • {String(shareId)}
       </div>
     ),
-    { width: 1200, height: 630 }
+    {
+      width: 1200,
+      height: 630,
+      headers: {
+        // CDN 캐시 허용
+        "Cache-Control":
+          "public, max-age=300, s-maxage=600, stale-while-revalidate=86400",
+      },
+    }
   );
 }
