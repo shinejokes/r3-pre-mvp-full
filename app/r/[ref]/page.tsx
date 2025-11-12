@@ -54,7 +54,8 @@ export async function generateMetadata({ params }: { params: Params }) {
 }
 
 export default async function RPage({ params }: { params: Params }) {
-  const ua = headers().get("user-agent") || "";
+  const h = await headers();
+  const ua = h.get("user-agent") ?? "";
   const isBot = BOT_UA.test(ua);
   const share = await getShare(params.ref);
 
