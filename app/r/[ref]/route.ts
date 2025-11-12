@@ -1,12 +1,14 @@
 // app/r/[ref]/route.ts
+export const dynamic = "force-dynamic"; // 캐시 방지 (선택)
+
 export async function GET(
   _req: Request,
-  { params }: { params: { ref?: string } }
+  context: { params: { ref?: string } } // ✅ context 통째로 받기
 ) {
   const site =
     process.env.NEXT_PUBLIC_SITE_URL || "https://r3-pre-mvp-full.vercel.app";
-  const ref = params.ref ?? "NO_PARAM";
-  const v = "10"; // 캐시 무력화를 위해 버전 올림
+  const ref = context.params?.ref ?? "NO_PARAM";
+  const v = "11"; // 캐시 무력화 위해 버전 업
 
   const title = `R3 v${v} • ${ref}`;
   const img = `${site}/api/ogimage?shareId=${encodeURIComponent(ref)}&v=${v}`;
@@ -21,18 +23,18 @@ export async function GET(
 <title>${title}</title>
 <link rel="canonical" href="${url}" />
 
-<meta property="og:title" content="${title}" />
-<meta property="og:description" content="R3 Link Preview" />
-<meta property="og:url" content="${url}" />
-<meta property="og:type" content="article" />
-<meta property="og:image" content="${img}" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="R3 Link Preview">
+<meta property="og:url" content="${url}">
+<meta property="og:type" content="article">
+<meta property="og:image" content="${img}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${title}" />
-<meta name="twitter:description" content="R3 Link Preview" />
-<meta name="twitter:image" content="${img}" />
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${title}">
+<meta name="twitter:description" content="R3 Link Preview">
+<meta name="twitter:image" content="${img}">
 </head>
 <body style="margin:0;font-family:system-ui,sans-serif">
   <main style="padding:24px">
