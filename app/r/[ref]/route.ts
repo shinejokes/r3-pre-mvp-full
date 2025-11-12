@@ -1,27 +1,22 @@
 // app/r/[ref]/route.ts
-export const dynamic = "force-dynamic"; // 캐시 방지 (선택)
+export const dynamic = "force-dynamic"; // 캐시 방지
 
-export async function GET(
-  _req: Request,
-  context: { params: { ref?: string } } // ✅ context 통째로 받기
-) {
+export async function GET(_req: Request, context: any) {
   const site =
     process.env.NEXT_PUBLIC_SITE_URL || "https://r3-pre-mvp-full.vercel.app";
-  const ref = context.params?.ref ?? "NO_PARAM";
-  const v = "11"; // 캐시 무력화 위해 버전 업
+  const ref = context?.params?.ref ?? "NO_PARAM";
+  const v = "12"; // 캐시 무력화용 버전 업
 
   const title = `R3 v${v} • ${ref}`;
   const img = `${site}/api/ogimage?shareId=${encodeURIComponent(ref)}&v=${v}`;
   const url = `${site}/r/${encodeURIComponent(ref)}`;
 
   const html = `<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>${title}</title>
-<link rel="canonical" href="${url}" />
+<link rel="canonical" href="${url}"/>
 
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="R3 Link Preview">
@@ -42,8 +37,7 @@ export async function GET(
     <p>ref: <b>${ref}</b></p>
     <p style="opacity:.6">이 응답은 HTML을 직접 반환합니다(봇/사람 모두 200).</p>
   </main>
-</body>
-</html>`;
+</body></html>`;
 
   return new Response(html, {
     status: 200,
