@@ -5,8 +5,8 @@ export const runtime = "edge";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const shareIdParam = url.searchParams.get("shareId");
-  const shareId = shareIdParam ?? "unknown";
+  const raw = url.searchParams.get("shareId");
+  const shareId = raw && raw !== "undefined" ? raw : "unknown"; // ← 가드
 
   return new ImageResponse(
     (
@@ -21,14 +21,13 @@ export async function GET(req: Request) {
           fontFamily: "system-ui, Segoe UI, Helvetica, Arial",
         }}
       >
-        R3 • {String(shareId)}
+        R3 • {shareId}
       </div>
     ),
     {
       width: 1200,
       height: 630,
       headers: {
-        // CDN 캐시 허용
         "Cache-Control":
           "public, max-age=300, s-maxage=600, stale-while-revalidate=86400",
       },
