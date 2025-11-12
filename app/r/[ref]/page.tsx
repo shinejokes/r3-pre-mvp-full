@@ -31,9 +31,9 @@ export async function generateMetadata({ params }: { params: Params }) {
     ? `이 링크는 R3를 통해 공유되었습니다. 조회수: ${share.views ?? 0}`
     : "공유 링크를 찾을 수 없습니다.";
 
-  const ogImage = share?.thumb_url
-    ? share.thumb_url
-    : `${site}/api/ogimage?shareId=${encodeURIComponent(params.ref)}`;
+const ogImage =
+  share?.thumb_url ??
+  `${site}/api/ogimage?shareId=${encodeURIComponent(params.ref)}&v=1`;
 
   const canonical = `${site}/r/${encodeURIComponent(params.ref)}`;
 
