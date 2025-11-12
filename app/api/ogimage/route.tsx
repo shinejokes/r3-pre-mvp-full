@@ -1,12 +1,11 @@
-// app/api/ogimage/route.tsx
+// app/api/ogimage/route.tsx (텍스트에 v4 표기)
 import { ImageResponse } from "next/og";
-
 export const runtime = "edge";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const raw = url.searchParams.get("shareId");
-  const shareId = raw && raw !== "undefined" ? raw : "unknown"; // ← 가드
+  const shareId = raw && raw !== "undefined" ? raw : "unknown";
 
   return new ImageResponse(
     (
@@ -21,7 +20,7 @@ export async function GET(req: Request) {
           fontFamily: "system-ui, Segoe UI, Helvetica, Arial",
         }}
       >
-        R3 • {shareId}
+        R3 v4 • {shareId}
       </div>
     ),
     {
