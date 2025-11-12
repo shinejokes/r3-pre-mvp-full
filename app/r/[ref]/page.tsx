@@ -1,7 +1,7 @@
 // app/r/[ref]/page.tsx
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { supabaseServer } from "../../lib/supabaseServer"; // 경로 주의!
+import { supabaseServer } from "../../lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
