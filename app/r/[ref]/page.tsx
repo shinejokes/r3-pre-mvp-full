@@ -5,11 +5,11 @@ export const revalidate = 0;
 type Params = { ref: string };
 
 export async function generateMetadata({ params }: { params: Params }) {
-  const site =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://r3-pre-mvp-full.vercel.app";
+  const site = process.env.NEXT_PUBLIC_SITE_URL || "https://r3-pre-mvp-full.vercel.app";
   const ref = params.ref || "NO_PARAM";
-  const title = `R3 v8 • ${ref}`;
-  const img = `${site}/api/ogimage?shareId=${encodeURIComponent(ref)}&v=8`;
+  const v = "9";
+  const title = `R3 v${v} • ${ref}`;
+  const img = `${site}/api/ogimage?shareId=${encodeURIComponent(ref)}&v=${v}`;
   const url = `${site}/r/${encodeURIComponent(ref)}`;
 
   return {
@@ -36,12 +36,7 @@ export default function RRef({ params }: { params: Params }) {
   return (
     <main style={{ padding: 24 }}>
       <h1>R3 preview (safe mode)</h1>
-      <p>
-        ref: <b>{params.ref}</b>
-      </p>
-      <p style={{ opacity: 0.6 }}>
-        진단용으로 항상 200을 반환합니다. (봇/사람 구분 없음)
-      </p>
+      <p>ref: <b>{params.ref}</b></p>
     </main>
   );
 }
