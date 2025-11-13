@@ -20,7 +20,7 @@ export async function GET(req: Request) {
           fontFamily: "system-ui, Segoe UI, Helvetica, Arial",
         }}
       >
-        R3 v6 • {shareId}
+        R3 • {shareId}
       </div>
     ),
     { width: 1200, height: 630 }
