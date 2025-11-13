@@ -4,30 +4,13 @@ import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-type RouteContext = {
-  params?: {
-    ref?: string
-  }
-}
-
-export async function GET(req: NextRequest, ctx: RouteContext) {
+export async function GET(req: NextRequest) {
   const url = new URL(req.url)
 
-  // 1) Next가 넘겨주는 동적 파라미터 우선 사용
-  let ref = ctx?.params?.ref
+  // /r/F6C8uDm → ["r", "F6C8uDm"] → 마지막 세그먼트 사용
+  const segments = url.pathname.split('/').filter(Boolean)
+  let shareId = segments[segments.length - 1] || 'NO_PARAM'
 
-  // 2) 혹시 params가 비어 있으면 URL path에서 직접 추출 (/r/F6C8uDm → F6C8uDm)
-  if (!ref) {
-    const segments = url.pathname.split('/').filter(Boolean) // ["r", "F6C8uDm"]
-    ref = segments[segments.length - 1]
-  }
-
-  // 3) 그래도 없으면 최종적으로만 NO_PARAM
-  if (!ref) {
-    ref = 'NO_PARAM'
-  }
-
-  const shareId = ref
   const origin = url.origin
   const canonicalUrl = `${origin}/r/${shareId}`
   const ogImageUrl = `${origin}/api/ogimage?shareId=${encodeURIComponent(
