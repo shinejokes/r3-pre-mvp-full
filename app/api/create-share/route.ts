@@ -16,7 +16,6 @@ function createRefCode(length: number = 7) {
 export async function POST(req: NextRequest) {
   const supabase = supabaseServer();
 
-  // 0) 요청에서 title, originalUrl 꺼내기
   const { title, originalUrl } = await req.json();
 
   if (!originalUrl) {
@@ -27,32 +26,18 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // 📌 Step 1 — 메시지 저장 (r3_messages 테이블)
-    const { data: message, error: messageError } = await supabase
-      .from("r3_messages")
-      .insert({
-        title: title || null,
-        original_url: originalUrl,
-      })
-      .select()
-      .single();
+    // 📌 이번 버전에서는 r3_messages는 사용하지 않고
+    //    모든 정보를 r3_shares 테이블에만 저장합니다.
 
-    if (messageError || !message) {
-      console.error("messageError:", messageError);
-      return NextResponse.json(
-        { error: "Failed to insert message" },
-        { status: 500 }
-      );
-    }
-
-    // 📌 Step 2 — 공유 레코드 생성 (r3_shares 테이블)
     const ref = createRefCode(); // 7~8 글자 코드 생성
 
     const { error: shareError } = await supabase
       .from("r3_shares")
       .insert({
         ref_code: ref,
-        message_id: message.id,
+        title: title || null,
+        original_url: originalUrl, // 스키마에 있는 컬럼
+        target_url: originalUrl,   // 리다이렉트 용도로도 동일하게 저장
       });
 
     if (shareError) {
@@ -63,7 +48,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 📌 Step 3 — /r/[ref] 링크 만들기
+    // /r/[ref] 링크 만들기
     const origin =
       req.headers.get("origin") ||
       process.env.NEXT_PUBLIC_SITE_URL ||
@@ -71,12 +56,10 @@ export async function POST(req: NextRequest) {
 
     const shareUrl = `${origin}/r/${ref}`;
 
-    // 프론트에서 쓸 수 있게 shareUrl과 ref 반환
     return NextResponse.json(
       {
         shareUrl,
         ref,
-        messageId: message.id,
       },
       { status: 200 }
     );
