@@ -1,184 +1,130 @@
-// app/api/ogimage/route.tsx
-import { NextRequest } from "next/server";
+/* app/api/ogimage/route.tsx */
+
 import { ImageResponse } from "next/og";
-import { supabaseServer } from "../../../lib/supabaseServer";
+import { NextRequest } from "next/server";
 
-export const runtime = "nodejs";
-
-export const size = {
-  width: 1200,
-  height: 630,
-};
-
-export const contentType = "image/png";
-
-// 유튜브 URL에서 video ID 뽑아내기
-function extractYoutubeId(rawUrl: string | null): string | null {
-  if (!rawUrl) return null;
-  try {
-    const url = new URL(rawUrl);
-    const host = url.hostname.replace(/^www\./, "");
-
-    // youtu.be/VIDEO_ID
-    if (host === "youtu.be") {
-      const id = url.pathname.replace("/", "").split(/[?/]/)[0];
-      return id || null;
-    }
-
-    if (host.endsWith("youtube.com")) {
-      // /watch?v=VIDEO_ID
-      const v = url.searchParams.get("v");
-      if (v) return v;
-
-      // /shorts/VIDEO_ID
-      if (url.pathname.startsWith("/shorts/")) {
-        const id = url.pathname.replace("/shorts/", "").split(/[?/]/)[0];
-        return id || null;
-      }
-
-      // /embed/VIDEO_ID
-      if (url.pathname.startsWith("/embed/")) {
-        const id = url.pathname.replace("/embed/", "").split(/[?/]/)[0];
-        return id || null;
-      }
-    }
-  } catch {
-    // 잘못된 URL은 무시
-  }
-  return null;
-}
+export const runtime = "edge";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const shareId = searchParams.get("shareId") || "NO_PARAM";
+  const shareId = searchParams.get("shareId") || "NO_ID";
 
-  const supabase = supabaseServer();
+  // ====== 배경 이미지(유튜브 썸네일 또는 fallback) ======
+  let thumbnailUrl = `https://img.youtube.com/vi/${extractYouTubeId(
+    shareId
+  )}/hqdefault.jpg`;
 
-  // 1) ref_code에 해당하는 share 정보 가져오기
-  const { data: share, error: shareError } = await supabase
-    .from("r3_shares")
-    .select("id, title, original_url, target_url")
-    .eq("ref_code", shareId)
-    .maybeSingle();
-
-  if (shareError) {
-    console.error("ogimage shareError:", shareError);
-  }
-
-  // 2) 조회수 세기
-  let views = 0;
-  if (share?.id) {
-    const { count, error: hitsError } = await supabase
-      .from("r3_hits")
-      .select("*", { count: "exact", head: true })
-      .eq("share_id", share.id);
-
-    if (hitsError) {
-      console.error("ogimage hitsError:", hitsError);
-    } else if (typeof count === "number") {
-      views = count;
-    }
-  }
-
-  const baseTitle = `R3 v12 • ${shareId}`;
-  const urlForDisplay =
-    share?.target_url || share?.original_url || "";
-
-  // 3) 유튜브 썸네일 URL 만들기
-  const videoId = extractYoutubeId(urlForDisplay);
-  const youtubeThumbUrl = videoId
-    ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-    : null;
+  // ====== 조회수 불러오기 ======
+  const views = await fetchHitsCount(shareId);
 
   return new ImageResponse(
     (
       <div
         style={{
-          width: size.width,
-          height: size.height,
-          position: "relative",
+          width: "1200px",
+          height: "630px",
           display: "flex",
-          alignItems: "stretch",
           justifyContent: "center",
+          alignItems: "center",
+          position: "relative",
           backgroundColor: "#000",
-          fontFamily:
-            "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         }}
       >
-        {/* 배경: 유튜브 썸네일 (없으면 검정 배경) */}
-        {youtubeThumbUrl && (
-          <img
-            src={youtubeThumbUrl}
-            alt=""
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              filter: "brightness(0.7)",
-            }}
-          />
-        )}
-
-        {/* 오버레이 전체 컨테이너 */}
-        <div
+        {/* ===== 배경 이미지 ===== */}
+        <img
+          src={thumbnailUrl}
+          alt="bg"
           style={{
             position: "absolute",
             inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+
+        {/* ===== 왼쪽 상단 Hits 박스 ===== */}
+        <div
+          style={{
+            position: "absolute",
+            top: 40,
+            left: 40,
+            backgroundColor: "white",
+            color: "black",
+            padding: "14px 28px",
+            borderRadius: 16,
+
             display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            padding: 48,
-            color: "#f9fafb",
+            alignItems: "center",
+            gap: 12,
+
+            boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
           }}
         >
-
-
-
-          {/* 하단: 심플한 R3 Hits N 배지 */}
-          <div
+          <span
             style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
+              fontSize: 24,
+              fontWeight: 700,
+              letterSpacing: "0.05em",
             }}
           >
-            <div
-              style={{
-                backgroundColor: "rgba(15,23,42,0.9)",
-                borderRadius: 999,
-                padding: "14px 36px",
-                display: "flex",
-                alignItems: "baseline",
-                gap: 12,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 24,
-                  fontWeight: 700,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                }}
-              >
-                R3
-              </span>
-              <span
-                style={{
-                  fontSize: 28,
-                  fontWeight: 600,
-                }}
-              >
-                Hits {views.toLocaleString("en-US")}
-              </span>
-            </div>
-          </div>
+            R3
+          </span>
+
+          <span
+            style={{
+              fontSize: 28,
+              fontWeight: 600,
+            }}
+          >
+            Hits {views.toLocaleString("en-US")}
+          </span>
         </div>
       </div>
     ),
     {
-      ...size,
+      width: 1200,
+      height: 630,
     }
   );
+}
+
+/* ====== Helper: YouTube ID 추출 ====== */
+function extractYouTubeId(url: string) {
+  // ID를 URL로 사용 중이면 fallback
+  if (!url.includes("http")) return url;
+
+  // youtu.be 단축 주소
+  if (url.includes("youtu.be/")) {
+    return url.split("youtu.be/")[1].split("?")[0];
+  }
+
+  // youtube watch?v=
+  if (url.includes("watch?v=")) {
+    return url.split("watch?v=")[1].split("&")[0];
+  }
+
+  // 모르면 ID 대신 그대로 사용
+  return url;
+}
+
+/* ====== Helper: 조회수 가져오기 ====== */
+async function fetchHitsCount(shareId: string) {
+  try {
+    const resp = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/r3_hits?share_id=eq.${shareId}&select=count`,
+      {
+        headers: {
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (!resp.ok) return 0;
+    const json = await resp.json();
+    return json?.[0]?.count || 0;
+  } catch (e) {
+    return 0;
+  }
 }
