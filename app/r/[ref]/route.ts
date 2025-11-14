@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   const canonicalUrl = `${origin}/r/${shareId}`;
  const ogImageUrl = `${origin}/api/ogimage?shareId=${encodeURIComponent(
   shareId
-)}&v=14`;  // 또는 20251114 같이 아무 숫자나 새로
+)}&v=15`;  // 또는 20251114 같이 아무 숫자나 새로
 
 
   const baseTitle = `R3 v12 • ${shareId}`;

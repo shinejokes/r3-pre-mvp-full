@@ -81,20 +81,8 @@ export async function GET(req: NextRequest) {
   }
 
   const baseTitle = `R3 v12 • ${shareId}`;
-  const titleText = share?.title || "";
   const urlForDisplay =
     share?.target_url || share?.original_url || "";
-
-  let urlHost = "";
-  try {
-    if (urlForDisplay) {
-      urlHost = new URL(urlForDisplay).hostname.replace(/^www\./, "");
-    }
-  } catch {
-    // ignore
-  }
-
-  const viewsText = `조회수: ${views.toLocaleString("ko-KR")}`;
 
   // 3) 유튜브 썸네일 URL 만들기
   const videoId = extractYoutubeId(urlForDisplay);
@@ -117,7 +105,7 @@ export async function GET(req: NextRequest) {
             "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         }}
       >
-        {/* 배경: 유튜브 썸네일 (없으면 그냥 검정 배경) */}
+        {/* 배경: 유튜브 썸네일 (없으면 검정 배경) */}
         {youtubeThumbUrl && (
           <img
             src={youtubeThumbUrl}
@@ -133,7 +121,7 @@ export async function GET(req: NextRequest) {
           />
         )}
 
-        {/* 오버레이 내용 */}
+        {/* 오버레이 전체 컨테이너 */}
         <div
           style={{
             position: "absolute",
@@ -145,7 +133,7 @@ export async function GET(req: NextRequest) {
             color: "#f9fafb",
           }}
         >
-          {/* 상단: R3 로고 + 코드 */}
+          {/* 상단: R3 배지 + 코드/버전 */}
           <div
             style={{
               display: "flex",
@@ -175,74 +163,42 @@ export async function GET(req: NextRequest) {
             </div>
           </div>
 
-          {/* 하단: 제목 / 도메인 / 조회수 */}
+          {/* 하단: 심플한 R3 Hits N 배지 */}
           <div
             style={{
-              backgroundColor: "rgba(15,23,42,0.85)",
-              borderRadius: 18,
-              padding: "18px 24px",
               display: "flex",
+              justifyContent: "center",
               alignItems: "center",
-              justifyContent: "space-between",
-              gap: 24,
             }}
           >
             <div
               style={{
+                backgroundColor: "rgba(15,23,42,0.9)",
+                borderRadius: 999,
+                padding: "14px 36px",
                 display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                maxWidth: 800,
+                alignItems: "baseline",
+                gap: 12,
               }}
             >
-              {titleText && (
-                <div
-                  style={{
-                    fontSize: 30,
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {titleText}
-                </div>
-              )}
-              <div
+              <span
                 style={{
-                  fontSize: 20,
-                  opacity: 0.8,
-                }}
-              >
-                {urlHost || "youtube.com"}
-              </div>
-            </div>
-
-            <div
-              style={{
-                textAlign: "right",
-                display: "flex",
-                flexDirection: "column",
-                gap: 4,
-                minWidth: 160,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 18,
-                  opacity: 0.8,
-                }}
-              >
-                조회수
-              </div>
-              <div
-                style={{
-                  fontSize: 32,
+                  fontSize: 24,
                   fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
                 }}
               >
-                {views.toLocaleString("ko-KR")}
-              </div>
+                R3
+              </span>
+              <span
+                style={{
+                  fontSize: 28,
+                  fontWeight: 600,
+                }}
+              >
+                Hits {views.toLocaleString("en-US")}
+              </span>
             </div>
           </div>
         </div>
