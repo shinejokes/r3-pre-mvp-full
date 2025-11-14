@@ -133,27 +133,7 @@ export async function GET(req: NextRequest) {
             color: "#f9fafb",
           }}
         >
-{/* 상단: 코드/버전만 표시 */}
-<div
-  style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-  }}
->
-  <div
-    style={{
-      fontSize: 22,
-      fontWeight: 600,
-      opacity: 0.9,
-      padding: "6px 14px",
-      borderRadius: 999,
-      backgroundColor: "rgba(15,23,42,0.85)",
-    }}
-  >
-    {baseTitle}
-  </div>
-</div>
+
 
 
           {/* 하단: 심플한 R3 Hits N 배지 */}
