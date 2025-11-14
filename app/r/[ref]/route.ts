@@ -30,9 +30,10 @@ export async function GET(req: NextRequest) {
 
   const origin = url.origin;
   const canonicalUrl = `${origin}/r/${shareId}`;
-  const ogImageUrl = `${origin}/api/ogimage?shareId=${encodeURIComponent(
-    shareId
-  )}&v=12`;
+ const ogImageUrl = `${origin}/api/ogimage?shareId=${encodeURIComponent(
+  shareId
+)}&v=13`;  // 또는 20251114 같이 아무 숫자나 새로
+
 
   const baseTitle = `R3 v12 • ${shareId}`;
   const title = share?.title ? `${baseTitle} • ${share.title}` : baseTitle;
