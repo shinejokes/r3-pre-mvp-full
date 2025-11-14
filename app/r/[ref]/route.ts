@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = supabaseServer();
 
-  // 1) 이 ref_code에 해당하는 공유 레코드 찾기
+  // 1) ref_code로 공유 레코드 조회
   const { data: share, error: shareError } = await supabase
     .from("r3_shares")
     .select("id, title, original_url, target_url")
@@ -30,47 +30,63 @@ export async function GET(req: NextRequest) {
 
   const origin = url.origin;
   const canonicalUrl = `${origin}/r/${shareId}`;
- const ogImageUrl = `${origin}/api/ogimage?shareId=${encodeURIComponent(
-  shareId
-)}&v=20`;  // 또는 20251114 같이 아무 숫자나 새로
+  const ogImageUrl = `${origin}/api/ogimage?shareId=${encodeURIComponent(
+    shareId
+  )}&v=20`; // 캐시 버전 (숫자 올리면 카카오/유튜브가 새로 그림을 받아감)
 
+  // 2) 카카오/트위터 등에 보낼 "깔끔한 제목" 만들기
+  //    - 원본 제목이 있으면 그대로 사용
+  //    - 없으면 도메인(youtu.be, youtube.com 등)만 사용
+  let cleanTitle = "R3 Link";
+  if (share?.title && share.title.trim()) {
+    cleanTitle = share.title.trim();
+  } else {
+    const fallbackUrl =
+      targetUrl || share?.original_url || origin;
+    try {
+      const u = new URL(fallbackUrl);
+      cleanTitle = u.hostname.replace(/^www\./, "");
+    } catch {
+      cleanTitle = "R3 Link";
+    }
+  }
 
-  const baseTitle = `R3 v12 • ${shareId}`;
-  const title = share?.title ? `${baseTitle} • ${share.title}` : baseTitle;
+  const description = "R3 Link Preview";
 
-  // 2) User-Agent 보고 "봇인지 사람인지" 판단
+  // 3) User-Agent로 봇/사람 구분
   const userAgent = req.headers.get("user-agent") || "";
   const isBot = /bot|kakao|facebookexternalhit|Twitterbot|Slackbot|WhatsApp|Discordbot/i.test(
     userAgent
   );
 
-  // 3) 사람(봇이 아님) + targetUrl이 있으면: hits 기록 후 원본으로 리다이렉트
+  // 4) 사람 + targetUrl 존재 → hits 기록 후 원본으로 리다이렉트
   if (!isBot && targetUrl) {
     try {
-      // r3_hits 스키마에 맞게 share_id만 넣는다고 가정
-      await supabase.from("r3_hits").insert({
-        share_id: share?.id ?? null,
-      });
+      if (share?.id) {
+        await supabase.from("r3_hits").insert({
+          share_id: share.id,
+        });
+      }
     } catch (hitError) {
       console.error("hit insert error:", hitError);
-      // hits가 실패해도 리다이렉트는 계속 진행
+      // hits 실패해도 리다이렉트는 그대로 진행
     }
 
     return NextResponse.redirect(targetUrl, 302);
   }
 
-  // 4) 그 외(봇이거나 targetUrl이 없는 경우)는 기존처럼 HTML + 메타 태그 반환
+  // 5) 봇(카카오/트위터 등) → OG 메타 태그 포함한 HTML 반환
   const html = `<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>${title}</title>
+    <title>${cleanTitle}</title>
 
     <link rel="canonical" href="${canonicalUrl}" />
 
-    <meta property="og:title" content="${title}" />
-    <meta property="og:description" content="R3 Link Preview" />
+    <meta property="og:title" content="${cleanTitle}" />
+    <meta property="og:description" content="${description}" />
     <meta property="og:url" content="${canonicalUrl}" />
     <meta property="og:type" content="article" />
     <meta property="og:image" content="${ogImageUrl}" />
@@ -78,12 +94,12 @@ export async function GET(req: NextRequest) {
     <meta property="og:image:height" content="630" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${title}" />
-    <meta name="twitter:description" content="R3 Link Preview" />
+    <meta name="twitter:title" content="${cleanTitle}" />
+    <meta name="twitter:description" content="${description}" />
     <meta name="twitter:image" content="${ogImageUrl}" />
   </head>
   <body>
-    <p>R3 Link Preview for <strong>${shareId}</strong></p>
+    <p>R3 Link Preview</p>
     ${
       targetUrl
         ? `<p>원본으로 이동: <a href="${targetUrl}">${targetUrl}</a></p>`
