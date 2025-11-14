@@ -1,9 +1,9 @@
-// app/api/ogimage/route.ts
+// app/api/ogimage/route.tsx
 import { NextRequest } from "next/server";
 import { ImageResponse } from "next/og";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
-export const runtime = "nodejs"; // edge가 아니라 Node.js 런타임 사용
+export const runtime = "nodejs";
 
 export const size = {
   width: 1200,
@@ -12,13 +12,49 @@ export const size = {
 
 export const contentType = "image/png";
 
+// 유튜브 URL에서 video ID 뽑아내기
+function extractYoutubeId(rawUrl: string | null): string | null {
+  if (!rawUrl) return null;
+  try {
+    const url = new URL(rawUrl);
+    const host = url.hostname.replace(/^www\./, "");
+
+    // youtu.be/VIDEO_ID
+    if (host === "youtu.be") {
+      const id = url.pathname.replace("/", "").split(/[?/]/)[0];
+      return id || null;
+    }
+
+    if (host.endsWith("youtube.com")) {
+      // /watch?v=VIDEO_ID
+      const v = url.searchParams.get("v");
+      if (v) return v;
+
+      // /shorts/VIDEO_ID
+      if (url.pathname.startsWith("/shorts/")) {
+        const id = url.pathname.replace("/shorts/", "").split(/[?/]/)[0];
+        return id || null;
+      }
+
+      // /embed/VIDEO_ID
+      if (url.pathname.startsWith("/embed/")) {
+        const id = url.pathname.replace("/embed/", "").split(/[?/]/)[0];
+        return id || null;
+      }
+    }
+  } catch {
+    // 잘못된 URL은 무시
+  }
+  return null;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const shareId = searchParams.get("shareId") || "NO_PARAM";
 
   const supabase = supabaseServer();
 
-  // 1) 이 ref_code에 해당하는 share 레코드 찾기
+  // 1) ref_code에 해당하는 share 정보 가져오기
   const { data: share, error: shareError } = await supabase
     .from("r3_shares")
     .select("id, title, original_url, target_url")
@@ -29,7 +65,7 @@ export async function GET(req: NextRequest) {
     console.error("ogimage shareError:", shareError);
   }
 
-  // 2) 조회수 세기 (r3_hits에서 share_id 기준으로 count)
+  // 2) 조회수 세기
   let views = 0;
   if (share?.id) {
     const { count, error: hitsError } = await supabase
@@ -44,9 +80,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 3) 표시용 텍스트 구성
   const baseTitle = `R3 v12 • ${shareId}`;
-  const titleText = share?.title ? `${share.title}` : "";
+  const titleText = share?.title || "";
   const urlForDisplay =
     share?.target_url || share?.original_url || "";
 
@@ -56,10 +91,16 @@ export async function GET(req: NextRequest) {
       urlHost = new URL(urlForDisplay).hostname.replace(/^www\./, "");
     }
   } catch {
-    // 잘못된 URL이면 그냥 무시
+    // ignore
   }
 
   const viewsText = `조회수: ${views.toLocaleString("ko-KR")}`;
+
+  // 3) 유튜브 썸네일 URL 만들기
+  const videoId = extractYoutubeId(urlForDisplay);
+  const youtubeThumbUrl = videoId
+    ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+    : null;
 
   return new ImageResponse(
     (
@@ -67,63 +108,144 @@ export async function GET(req: NextRequest) {
         style={{
           width: size.width,
           height: size.height,
+          position: "relative",
           display: "flex",
-          flexDirection: "column",
+          alignItems: "stretch",
           justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "white",
-          padding: 80,
+          backgroundColor: "#000",
           fontFamily:
             "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         }}
       >
-        <div
-          style={{
-            fontSize: 48,
-            fontWeight: 700,
-            marginBottom: 24,
-          }}
-        >
-          {baseTitle}
-        </div>
-
-        <div
-          style={{
-            fontSize: 28,
-            marginBottom: 16,
-          }}
-        >
-          {viewsText}
-        </div>
-
-        {titleText && (
-          <div
+        {/* 배경: 유튜브 썸네일 (없으면 그냥 검정 배경) */}
+        {youtubeThumbUrl && (
+          <img
+            src={youtubeThumbUrl}
+            alt=""
             style={{
-              fontSize: 26,
-              marginTop: 8,
-              textAlign: "center",
-              maxWidth: 900,
-              lineHeight: 1.3,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              filter: "brightness(0.7)",
             }}
-          >
-            {titleText}
-          </div>
+          />
         )}
 
-        {urlHost && (
+        {/* 오버레이 내용 */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            padding: 48,
+            color: "#f9fafb",
+          }}
+        >
+          {/* 상단: R3 로고 + 코드 */}
           <div
             style={{
-              fontSize: 22,
-              marginTop: 12,
-              color: "#4b5563",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
             }}
           >
-            {urlHost}
+            <div
+              style={{
+                padding: "6px 14px",
+                borderRadius: 999,
+                backgroundColor: "rgba(15,23,42,0.85)",
+                fontSize: 20,
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+              }}
+            >
+              R3
+            </div>
+            <div
+              style={{
+                fontSize: 22,
+                opacity: 0.9,
+              }}
+            >
+              {baseTitle}
+            </div>
           </div>
-        )}
+
+          {/* 하단: 제목 / 도메인 / 조회수 */}
+          <div
+            style={{
+              backgroundColor: "rgba(15,23,42,0.85)",
+              borderRadius: 18,
+              padding: "18px 24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 24,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                maxWidth: 800,
+              }}
+            >
+              {titleText && (
+                <div
+                  style={{
+                    fontSize: 30,
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {titleText}
+                </div>
+              )}
+              <div
+                style={{
+                  fontSize: 20,
+                  opacity: 0.8,
+                }}
+              >
+                {urlHost || "youtube.com"}
+              </div>
+            </div>
+
+            <div
+              style={{
+                textAlign: "right",
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+                minWidth: 160,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 18,
+                  opacity: 0.8,
+                }}
+              >
+                조회수
+              </div>
+              <div
+                style={{
+                  fontSize: 32,
+                  fontWeight: 700,
+                }}
+              >
+                {views.toLocaleString("ko-KR")}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     ),
     {
