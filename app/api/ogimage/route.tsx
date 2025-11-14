@@ -43,7 +43,7 @@ function extractYoutubeId(rawUrl: string | null): string | null {
       }
     }
   } catch {
-    // 잘못된 URL이면 그냥 무시
+    // 잘못된 URL이면 무시
   }
   return null;
 }
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
     console.error("ogimage shareError:", shareError);
   }
 
-  // 2) 조회수 세기 (r3_hits에서 share_id 기준으로 count)
+  // 2) 조회수 세기 (r3_hits에서 share_id 기준 count)
   let views = 0;
   if (share?.id) {
     const { count, error: hitsError } = await supabase
@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
             "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         }}
       >
-        {/* 배경: 유튜브 썸네일 (없으면 그냥 검정 배경) */}
+        {/* 배경: 유튜브 썸네일 (없으면 검정 배경) */}
         {youtubeThumbUrl && (
           <img
             src={youtubeThumbUrl}
@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
           />
         )}
 
-        {/* 왼쪽 상단: 흰 배경 R3 Hits N 박스 */}
+        {/* 왼쪽 상단: 흰색 R3 Hits N 박스만 표시 */}
         <div
           style={{
             position: "absolute",
