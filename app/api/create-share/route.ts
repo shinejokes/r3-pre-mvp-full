@@ -1,61 +1,97 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "../../../lib/supabaseServer";
+// app/api/create-share/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseServer } from '../../../lib/supabaseServer'
 
-function generateRefCode(length = 6) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  return Array.from({ length }, () =>
-    chars[Math.floor(Math.random() * chars.length)]
-  ).join("");
+// 간단한 ref_code 생성기 (nanoid 안 써도 되는 버전)
+function generateRefCode(length = 7) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
 }
 
-export async function GET(req: NextRequest) {
-  const supabase = supabaseServer();
+export async function POST(req: NextRequest) {
+  try {
+    const supabase = supabaseServer()
+    const body = await req.json()
 
-  const url = new URL(req.url);
-  const messageId = url.searchParams.get("messageId");
-  const parentShareId = url.searchParams.get("parentShareId");
+    const {
+      messageId,          // 필수: 공유할 message의 ID
+      parentRefCode,      // 선택: 부모 share의 ref_code (없으면 최초 공유)
+      sharerName,         // 선택: 공유자 이름/닉네임
+    } = body
 
-  // 1) messageId 필수
-  if (!messageId) {
+    if (!messageId) {
+      return NextResponse.json(
+        { ok: false, error: 'messageId is required' },
+        { status: 400 }
+      )
+    }
+
+    // 기본값: 최초 공유라고 가정
+    let hop = 0
+    let parentShareId: string | null = null
+
+    // parentRefCode가 있으면, 부모 share를 찾아 hop을 누적
+    if (parentRefCode) {
+      const { data: parentShare, error: parentError } = await supabase
+        .from('shares')
+        .select('id, hop')
+        .eq('ref_code', parentRefCode)
+        .single()
+
+      if (parentError || !parentShare) {
+        console.error('parent share not found:', parentError)
+        return NextResponse.json(
+          { ok: false, error: 'Parent share not found for given parentRefCode' },
+          { status: 400 }
+        )
+      }
+
+      parentShareId = parentShare.id
+      hop = (parentShare.hop ?? 0) + 1
+    }
+
+    const refCode = generateRefCode()
+
+    // shares 테이블에 새 share 등록
+    const { data: newShare, error: insertError } = await supabase
+      .from('shares')
+      .insert({
+        message_id: messageId,
+        parent_share_id: parentShareId,
+        hop,
+        ref_code: refCode,
+        sharer_name: sharerName ?? null,
+      })
+      .select('id, ref_code, hop')
+      .single()
+
+    if (insertError || !newShare) {
+      console.error('insert share error:', insertError)
+      return NextResponse.json(
+        { ok: false, error: 'Failed to insert share' },
+        { status: 500 }
+      )
+    }
+
+    // 클라이언트에서 바로 쓸 수 있게 필요한 정보 반환
     return NextResponse.json(
-      { error: "messageId query parameter is required" },
-      { status: 400 }
-    );
+      {
+        ok: true,
+        shareId: newShare.id,
+        refCode: newShare.ref_code,
+        hop: newShare.hop,
+      },
+      { status: 201 }
+    )
+  } catch (e) {
+    console.error('create-share API error:', e)
+    return NextResponse.json(
+      { ok: false, error: 'Unexpected server error' },
+      { status: 500 }
+    )
   }
-
-  let hop = 1;
-
-  // 2) parentShareId가 있으면 hop = parent.hop + 1
-  if (parentShareId) {
-    const { data: parent, error: parentError } = await supabase
-      .from("r3_shares")
-      .select("hop")
-      .eq("ref_code", parentShareId)
-      .maybeSingle();
-
-    if (parentError) {
-      console.error("Error fetching parent share:", parentError);
-    }
-
-    if (parent && parent.hop) {
-      hop = parent.hop + 1;
-    }
-  }
-
-  // 3) 새로운 refCode 생성
-  const refCode = generateRefCode();
-
-  // 4) Supabase에 저장
-  const { error } = await supabase.from("r3_shares").insert({
-    ref_code: refCode,
-    message_id: messageId,
-    hop: hop,
-  });
-
-  if (error) {
-    console.error("Supabase insert error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ refCode, hop });
 }
