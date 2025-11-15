@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '../../../lib/supabaseServer'
 
-// 간단한 ref_code 생성기
 function generateRefCode(length = 7) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   let result = ''
@@ -18,9 +17,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
 
     const {
-      messageId,      // 필수: r3_messages.id
-      parentRefCode,  // 선택
-      sharerName,     // 선택
+      messageId,
+      parentRefCode,
+      sharerName,
     } = body as {
       messageId?: string
       parentRefCode?: string | null
@@ -34,14 +33,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 기본값: 최초 공유
     let hop = 0
     let parentShareId: string | null = null
 
-    // 부모 ref_code가 있으면 hop 누적
     if (parentRefCode) {
       const { data: parentShare, error: parentError } = await supabase
-        .from('r3_shares')               // ✅ 실제 테이블 이름
+        .from('r3_shares')
         .select('id, hop')
         .eq('ref_code', parentRefCode)
         .single()
@@ -60,9 +57,8 @@ export async function POST(req: NextRequest) {
 
     const refCode = generateRefCode()
 
-    // r3_shares 테이블에 새 share 등록
     const { data: newShare, error: insertError } = await supabase
-      .from('r3_shares')                 // ✅ 실제 테이블 이름
+      .from('r3_shares')
       .insert({
         message_id: messageId,
         parent_share_id: parentShareId,
@@ -75,8 +71,13 @@ export async function POST(req: NextRequest) {
 
     if (insertError || !newShare) {
       console.error('insert share error:', insertError)
+      // ✅ 디버그용으로 Supabase 에러 메시지를 그대로 내려보냄
       return NextResponse.json(
-        { ok: false, error: 'Failed to insert share' },
+        {
+          ok: false,
+          error: insertError?.message || 'Failed to insert share',
+          details: insertError, // 필요하면 보고 지우면 됨
+        },
         { status: 500 }
       )
     }
