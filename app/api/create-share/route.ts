@@ -12,22 +12,13 @@ export async function GET(req: NextRequest) {
   const supabase = supabaseServer();
 
   const url = new URL(req.url);
-  const messageIdParam = url.searchParams.get("messageId");
+  const messageId = url.searchParams.get("messageId");
   const parentShareId = url.searchParams.get("parentShareId");
 
   // 1) messageId 필수
-  if (!messageIdParam) {
+  if (!messageId) {
     return NextResponse.json(
       { error: "messageId query parameter is required" },
-      { status: 400 }
-    );
-  }
-
-  // messageId는 number로 쓰고 있으면 숫자로 변환
-  const messageId = Number(messageIdParam);
-  if (Number.isNaN(messageId)) {
-    return NextResponse.json(
-      { error: "messageId must be a number" },
       { status: 400 }
     );
   }
@@ -55,7 +46,7 @@ export async function GET(req: NextRequest) {
   const refCode = generateRefCode();
 
   // 4) Supabase에 저장
-  const { data, error } = await supabase.from("r3_shares").insert({
+  const { error } = await supabase.from("r3_shares").insert({
     ref_code: refCode,
     message_id: messageId,
     hop: hop,
@@ -66,6 +57,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // 5) 결과 반환
   return NextResponse.json({ refCode, hop });
 }
