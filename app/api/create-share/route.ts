@@ -8,18 +8,21 @@ function generateRefCode(length = 6) {
   ).join("");
 }
 
+// ✅ 이 GET 핸들러를 맨 위쪽에 추가
+export async function GET() {
+  return NextResponse.json({ message: "create-share GET OK (from new route.ts)" });
+}
+
 export async function POST(req: NextRequest) {
   const supabase = supabaseServer();
   const { messageId, parentShareId } = await req.json();
 
-  // 1) messageId 필수 체크
   if (!messageId) {
     return NextResponse.json({ error: "messageId is required" }, { status: 400 });
   }
 
-  let hop = 1; // 기본값은 1
+  let hop = 1;
 
-  // 2) parentShareId가 있다면 기존 share의 hop을 불러와 +1
   if (parentShareId) {
     const { data: parent, error: parentError } = await supabase
       .from("r3_shares")
@@ -36,10 +39,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 3) 새로운 refCode 생성
   const refCode = generateRefCode();
 
-  // 4) DB 저장
   const { data, error } = await supabase.from("r3_shares").insert({
     ref_code: refCode,
     message_id: messageId,
@@ -51,6 +52,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // 5) 응답
   return NextResponse.json({ refCode, hop });
 }
