@@ -5,7 +5,7 @@ import React, { useState } from 'react'
 
 type SharePageProps = {
   params: {
-    messageId: string
+    messageId?: string
   }
   searchParams?: {
     parentRefCode?: string
@@ -13,7 +13,8 @@ type SharePageProps = {
 }
 
 export default function SharePage({ params, searchParams }: SharePageProps) {
-  const { messageId } = params
+  // URL에 세그먼트가 있으면 기본값으로 사용
+  const [messageId, setMessageId] = useState(params.messageId ?? '')
   const parentRefCode = searchParams?.parentRefCode || ''
 
   const [sharerName, setSharerName] = useState('')
@@ -27,6 +28,13 @@ export default function SharePage({ params, searchParams }: SharePageProps) {
     setError(null)
     setShareUrl(null)
 
+    const trimmedMessageId = messageId.trim()
+    if (!trimmedMessageId) {
+      setError('메시지 ID를 입력해 주세요.')
+      setLoading(false)
+      return
+    }
+
     try {
       const res = await fetch('/api/create-share', {
         method: 'POST',
@@ -34,7 +42,7 @@ export default function SharePage({ params, searchParams }: SharePageProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messageId,
+          messageId: trimmedMessageId,
           parentRefCode: parentRefCode || null,
           sharerName: sharerName.trim() || null,
         }),
@@ -91,24 +99,32 @@ export default function SharePage({ params, searchParams }: SharePageProps) {
         카카오톡 등으로 퍼나르면, 조회수와 hop이 함께 기록됩니다.
       </p>
 
-      <div
+      {/* 메시지 ID 입력 */}
+      <label
         style={{
-          fontSize: 13,
-          padding: '8px 10px',
-          borderRadius: 8,
-          background: '#f7f7f7',
-          marginBottom: 16,
+          display: 'block',
+          fontSize: 14,
+          fontWeight: 600,
+          marginBottom: 4,
         }}
       >
-        <div>
-          <strong>메시지 ID:</strong> {messageId}
-        </div>
-        {parentRefCode && (
-          <div>
-            <strong>부모 ref_code:</strong> {parentRefCode}
-          </div>
-        )}
-      </div>
+        메시지 ID:
+      </label>
+      <input
+        type="text"
+        value={messageId}
+        onChange={(e) => setMessageId(e.target.value)}
+        placeholder="r3_messages 테이블의 id를 붙여 넣으세요."
+        style={{
+          width: '100%',
+          padding: '8px 10px',
+          borderRadius: 8,
+          border: '1px solid #ccc',
+          marginBottom: 16,
+          fontSize: 13,
+          fontFamily: 'monospace',
+        }}
+      />
 
       <label
         style={{

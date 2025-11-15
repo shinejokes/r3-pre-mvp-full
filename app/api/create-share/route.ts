@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '../../../lib/supabaseServer'
 
-// 간단한 ref_code 생성기 (nanoid 안 써도 되는 버전)
+// 간단한 ref_code 생성기
 function generateRefCode(length = 7) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   let result = ''
@@ -18,26 +18,30 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
 
     const {
-      messageId,          // 필수: 공유할 message의 ID
-      parentRefCode,      // 선택: 부모 share의 ref_code (없으면 최초 공유)
-      sharerName,         // 선택: 공유자 이름/닉네임
-    } = body
+      messageId,      // 필수: r3_messages.id
+      parentRefCode,  // 선택
+      sharerName,     // 선택
+    } = body as {
+      messageId?: string
+      parentRefCode?: string | null
+      sharerName?: string | null
+    }
 
-    if (!messageId) {
+    if (!messageId || typeof messageId !== 'string') {
       return NextResponse.json(
         { ok: false, error: 'messageId is required' },
         { status: 400 }
       )
     }
 
-    // 기본값: 최초 공유라고 가정
+    // 기본값: 최초 공유
     let hop = 0
     let parentShareId: string | null = null
 
-    // parentRefCode가 있으면, 부모 share를 찾아 hop을 누적
+    // 부모 ref_code가 있으면 hop 누적
     if (parentRefCode) {
       const { data: parentShare, error: parentError } = await supabase
-        .from('shares')
+        .from('r3_shares')               // ✅ 실제 테이블 이름
         .select('id, hop')
         .eq('ref_code', parentRefCode)
         .single()
@@ -56,9 +60,9 @@ export async function POST(req: NextRequest) {
 
     const refCode = generateRefCode()
 
-    // shares 테이블에 새 share 등록
+    // r3_shares 테이블에 새 share 등록
     const { data: newShare, error: insertError } = await supabase
-      .from('shares')
+      .from('r3_shares')                 // ✅ 실제 테이블 이름
       .insert({
         message_id: messageId,
         parent_share_id: parentShareId,
@@ -77,7 +81,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 클라이언트에서 바로 쓸 수 있게 필요한 정보 반환
     return NextResponse.json(
       {
         ok: true,
