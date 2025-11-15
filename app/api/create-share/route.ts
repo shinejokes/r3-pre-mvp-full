@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const {
       messageId,
       parentRefCode,
-      sharerName,
+      // sharerName,   // 👉 일단 타입에서만 받아 두고, DB에는 안 넣음
     } = body as {
       messageId?: string
       parentRefCode?: string | null
@@ -64,19 +64,18 @@ export async function POST(req: NextRequest) {
         parent_share_id: parentShareId,
         hop,
         ref_code: refCode,
-        sharer_name: sharerName ?? null,
+        // sharer_name: sharerName ?? null,  // ❌ 테이블에 없으니 제거
       })
       .select('id, ref_code, hop')
       .single()
 
     if (insertError || !newShare) {
       console.error('insert share error:', insertError)
-      // ✅ 디버그용으로 Supabase 에러 메시지를 그대로 내려보냄
       return NextResponse.json(
         {
           ok: false,
           error: insertError?.message || 'Failed to insert share',
-          details: insertError, // 필요하면 보고 지우면 됨
+          details: insertError,
         },
         { status: 500 }
       )
