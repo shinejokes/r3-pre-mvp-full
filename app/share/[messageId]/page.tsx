@@ -5,12 +5,10 @@ import React, { useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 
 export default function SharePage() {
-  // URL 세그먼트에서 messageId 읽기
   const params = useParams<{ messageId?: string }>()
   const searchParams = useSearchParams()
 
   const initialMessageId = (params?.messageId as string) || ''
-  // searchParams null 가능성 안전 처리
   const parentRefCode =
     (searchParams && searchParams.get('parentRefCode')) || ''
 
@@ -165,4 +163,71 @@ export default function SharePage() {
           color: 'white',
         }}
       >
-        {loading ? '만드는
+        {loading ? 'Creating...' : 'Create share link'}
+      </button>
+
+      {error && (
+        <div
+          style={{
+            marginTop: 16,
+            padding: '10px 12px',
+            borderRadius: 8,
+            background: '#ffe5e5',
+            color: '#b00020',
+            fontSize: 13,
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {shareUrl && (
+        <div
+          style={{
+            marginTop: 20,
+            padding: '12px 12px',
+            borderRadius: 8,
+            background: '#f0f9ff',
+            fontSize: 13,
+          }}
+        >
+          <div style={{ marginBottom: 6, fontWeight: 600 }}>
+            공유 링크가 생성되었습니다.
+          </div>
+          <div
+            style={{
+              wordBreak: 'break-all',
+              padding: '6px 8px',
+              borderRadius: 6,
+              background: 'white',
+              border: '1px solid #cbd5e0',
+              marginBottom: 8,
+            }}
+          >
+            {shareUrl}
+          </div>
+          {hop !== null && (
+            <div style={{ marginBottom: 8 }}>
+              <strong>hop:</strong> {hop}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={handleCopy}
+            style={{
+              padding: '6px 10px',
+              borderRadius: 999,
+              border: 'none',
+              background: '#3182ce',
+              color: 'white',
+              fontSize: 13,
+              cursor: 'pointer',
+            }}
+          >
+            링크 복사하기
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
