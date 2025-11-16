@@ -141,28 +141,27 @@ export async function GET(req: NextRequest) {
   // 3) 썸네일 URL 결정 (YouTube + 다양한 외부 사이트 대응)
   const thumbnailUrl = await resolveThumbnailUrl(targetUrl);
 
-const r3BadgeStyle: React.CSSProperties = {
-  padding: "12px 26px",
-  borderRadius: 9999,
-  fontSize: 36,
-  fontWeight: 800,
-  backgroundColor: "rgba(15, 23, 42, 1.0)",
-  color: "#ffffff",
-  border: "3px solid rgba(248, 250, 252, 0.95)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
+  // 모바일 카카오톡에서도 잘 보이도록 크게 조정
+  const badgeStyle: React.CSSProperties = {
+    padding: "12px 24px",
+    borderRadius: 9999,
+    fontSize: 34,
+    fontWeight: 700,
+    border: "3px solid rgba(248, 250, 252, 0.9)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(15, 23, 42, 0.85)",
+  };
 
   const r3BadgeStyle: React.CSSProperties = {
-    padding: "8px 18px",
+    padding: "12px 28px",
     borderRadius: 9999,
-    fontSize: 26,
-    fontWeight: 700,
+    fontSize: 36,
+    fontWeight: 800,
     backgroundColor: "rgba(15, 23, 42, 1.0)", // 불투명 진한 남색
     color: "#ffffff",
-    border: "2px solid rgba(248, 250, 252, 0.9)",
+    border: "3px solid rgba(248, 250, 252, 0.95)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -232,7 +231,7 @@ const r3BadgeStyle: React.CSSProperties = {
             justifyContent: "space-between",
           }}
         >
-          {/* 상단 도메인만 표시 */}
+          {/* 상단: 도메인만 표시 */}
           <div
             style={{
               display: "flex",
@@ -296,13 +295,13 @@ const r3BadgeStyle: React.CSSProperties = {
 
             {/* 조회수 배지 */}
             <div style={badgeStyle}>
-              <span style={{ marginRight: 8 }}>Views</span>
+              <span style={{ marginRight: 10 }}>Views</span>
               <span>{views}</span>
             </div>
 
             {/* HOP 배지 */}
             <div style={badgeStyle}>
-              <span style={{ marginRight: 8 }}>HOP</span>
+              <span style={{ marginRight: 10 }}>HOP</span>
               <span>{hop}</span>
             </div>
           </div>
