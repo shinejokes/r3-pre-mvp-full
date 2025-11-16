@@ -36,7 +36,7 @@ function extractYouTubeId(urlStr: string): string | null {
 function getYouTubeThumbnail(urlStr: string): string | null {
   const id = extractYouTubeId(urlStr);
   if (!id) return null;
-  // 너무 큰 maxres 대신 비교적 안전한 hqdefault 사용
+  // 안전하게 hqdefault 사용
   return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
 }
 
@@ -46,7 +46,6 @@ async function fetchOgImage(urlStr: string): Promise<string | null> {
     const res = await fetch(urlStr, {
       method: "GET",
       headers: {
-        // 봇 차단을 피하기 위한 일반 브라우저 UA
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
           "(KHTML, like Gecko) Chrome/120.0 Safari/537.36",
@@ -79,4 +78,241 @@ async function resolveThumbnailUrl(targetUrl: string): Promise<string | null> {
   if (!targetUrl) return null;
 
   // 1) YouTube면 자체 규칙으로 바로 썸네일 생성
-  const youtub
+  const youtubeThumb = getYouTubeThumbnail(targetUrl);
+  if (youtubeThumb) return youtubeThumb;
+
+  // 2) 그 외 사이트는 og:image 크롤링 시도
+  const ogImage = await fetchOgImage(targetUrl);
+  if (ogImage) return ogImage;
+
+  // 3) 실패하면 null (우리 디자인 배경만 사용)
+  return null;
+}
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const shareId = searchParams.get("shareId");
+
+  if (!shareId) {
+    return new Response("Missing shareId", { status: 400 });
+  }
+
+  const supabase = supabaseServer();
+
+  // 1) 공유 레코드 가져오기 (hop 포함)
+  const { data: share, error: shareError } = await supabase
+    .from("r3_shares")
+    .select("id, title, original_url, target_url, hop")
+    .eq("ref_code", shareId)
+    .maybeSingle();
+
+  if (shareError || !share) {
+    console.error("share fetch error:", shareError);
+    return new Response("Share not found", { status: 404 });
+  }
+
+  // 2) 조회수(hits) 개수 세기
+  const { count: hitsCount, error: hitsError } = await supabase
+    .from("r3_hits")
+    .select("*", { count: "exact", head: true })
+    .eq("share_id", share.id);
+
+  if (hitsError) {
+    console.error("hits fetch error:", hitsError);
+  }
+
+  const views = hitsCount ?? 0;
+  const hop = share.hop ?? 1;
+
+  // 원본/타겟 URL
+  const targetUrl = share.target_url || share.original_url || "";
+  let hostname = "";
+  try {
+    if (targetUrl) {
+      hostname = new URL(targetUrl).hostname.replace(/^www\./, "");
+    }
+  } catch {
+    // ignore
+  }
+
+  const title = share.title || "R3 Shared Link";
+
+  // 3) 썸네일 URL 결정 (YouTube + 다양한 외부 사이트 대응)
+  const thumbnailUrl = await resolveThumbnailUrl(targetUrl);
+
+  const badgeStyle: React.CSSProperties = {
+    padding: "8px 18px",
+    borderRadius: 9999,
+    fontSize: 26,
+    fontWeight: 600,
+    border: "2px solid rgba(248, 250, 252, 0.8)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(15, 23, 42, 0.75)",
+  };
+
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "1200px",
+          height: "630px",
+          position: "relative",
+          display: "flex",
+          alignItems: "stretch",
+          justifyContent: "center",
+          fontFamily:
+            "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          color: "#f9fafb",
+          backgroundColor: "#020617",
+        }}
+      >
+        {/* 원본 썸네일 전체 배경 */}
+        {thumbnailUrl ? (
+          <img
+            src={thumbnailUrl}
+            alt="Original thumbnail"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        ) : (
+          // 썸네일 실패 시 기본 배경
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "radial-gradient(circle at top left, #0f172a, #020617 55%, #020617)",
+            }}
+          />
+        )}
+
+        {/* 어두운 오버레이 */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to top, rgba(15,23,42,0.9), rgba(15,23,42,0.2), rgba(15,23,42,0.95))",
+          }}
+        />
+
+        {/* 내용 레이아웃 */}
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            width: "100%",
+            height: "100%",
+            padding: "40px 60px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          }}
+        >
+          {/* 상단 R3 / 도메인 */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              fontSize: 32,
+              fontWeight: 700,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span
+                style={{
+                  padding: "4px 14px",
+                  borderRadius: 9999,
+                  border: "1px solid rgba(248, 250, 252, 0.7)",
+                  fontSize: 24,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                }}
+              >
+                R3
+              </span>
+              <span style={{ fontSize: 20, color: "#e5e7eb" }}>
+                Rewarded Relay Registry
+              </span>
+            </div>
+            {hostname && (
+              <span
+                style={{
+                  fontSize: 24,
+                  color: "#cbd5f5",
+                  backgroundColor: "rgba(15,23,42,0.6)",
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                }}
+              >
+                {hostname}
+              </span>
+            )}
+          </div>
+
+          {/* 중앙 제목 */}
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              maxWidth: "1000px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 50,
+                fontWeight: 800,
+                lineHeight: 1.2,
+                whiteSpace: "pre-wrap",
+                textShadow: "0 4px 18px rgba(15,23,42,0.95)",
+              }}
+            >
+              {title}
+            </div>
+          </div>
+
+          {/* 하단 뱃지 (조회수 + HOP) */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 20,
+              alignItems: "center",
+            }}
+          >
+            {/* 조회수 배지 */}
+            <div style={badgeStyle}>
+              <span style={{ marginRight: 8 }}>Views</span>
+              <span>{views}</span>
+            </div>
+
+            {/* HOP 배지 */}
+            <div style={badgeStyle}>
+              <span style={{ marginRight: 8 }}>HOP</span>
+              <span>{hop}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+    {
+      width: 1200,
+      height: 630,
+    }
+  );
+}
