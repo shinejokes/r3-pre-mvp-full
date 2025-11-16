@@ -141,17 +141,19 @@ export async function GET(req: NextRequest) {
   // 3) 썸네일 URL 결정 (YouTube + 다양한 외부 사이트 대응)
   const thumbnailUrl = await resolveThumbnailUrl(targetUrl);
 
-  const badgeStyle: React.CSSProperties = {
-    padding: "8px 18px",
-    borderRadius: 9999,
-    fontSize: 26,
-    fontWeight: 600,
-    border: "2px solid rgba(248, 250, 252, 0.8)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(15, 23, 42, 0.75)",
-  };
+const r3BadgeStyle: React.CSSProperties = {
+  padding: "12px 26px",
+  borderRadius: 9999,
+  fontSize: 36,
+  fontWeight: 800,
+  backgroundColor: "rgba(15, 23, 42, 1.0)",
+  color: "#ffffff",
+  border: "3px solid rgba(248, 250, 252, 0.95)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
 
   const r3BadgeStyle: React.CSSProperties = {
     padding: "8px 18px",
