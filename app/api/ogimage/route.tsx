@@ -286,7 +286,7 @@ export async function GET(req: NextRequest) {
             )}
           </div>
 
-          {/* 하단 뱃지 (조회수 + HOP) */}
+                 {/* 하단 뱃지 (조회수 + HOP) */}
           <div
             style={{
               display: "flex",
@@ -303,4 +303,17 @@ export async function GET(req: NextRequest) {
 
             {/* HOP 배지 */}
             <div style={badgeStyle}>
-              <span style={{ marginRig
+              <span style={{ marginRight: 8 }}>HOP</span>
+              <span>{hop}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+    {
+      width: 1200,
+      height: 630,
+    }
+  );
+}
+
