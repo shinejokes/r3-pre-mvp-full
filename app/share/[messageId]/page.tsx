@@ -2,21 +2,17 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 
-type SharePageProps = {
-  params: {
-    messageId?: string
-  }
-  searchParams?: {
-    parentRefCode?: string
-  }
-}
+export default function SharePage() {
+  // URL 세그먼트에서 messageId 읽기
+  const params = useParams<{ messageId?: string }>()
+  const searchParams = useSearchParams()
 
-export default function SharePage({ params, searchParams }: SharePageProps) {
-  // URL에 세그먼트가 있으면 기본값으로 사용
-  const [messageId, setMessageId] = useState(params.messageId ?? '')
-  const parentRefCode = searchParams?.parentRefCode || ''
+  const initialMessageId = (params?.messageId as string) || ''
+  const parentRefCode = searchParams.get('parentRefCode') || ''
 
+  const [messageId, setMessageId] = useState(initialMessageId)
   const [sharerName, setSharerName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
