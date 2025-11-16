@@ -264,27 +264,30 @@ export async function GET(req: NextRequest) {
             )}
           </div>
 
-          {/* 중앙 제목 */}
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              maxWidth: "1000px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 50,
-                fontWeight: 800,
-                lineHeight: 1.2,
-                whiteSpace: "pre-wrap",
-                textShadow: "0 4px 18px rgba(15,23,42,0.95)",
-              }}
-            >
-              {title}
-            </div>
-          </div>
+{/* 중앙 제목 (title이 있을 때만 표시) */}
+<div
+  style={{
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    maxWidth: "1000px",
+  }}
+>
+  {title && (
+    <div
+      style={{
+        fontSize: 50,
+        fontWeight: 800,
+        lineHeight: 1.2,
+        whiteSpace: "pre-wrap",
+        textShadow: "0 4px 18px rgba(15,23,42,0.95)",
+      }}
+    >
+      {title}
+    </div>
+  )}
+</div>
+
 
           {/* 하단 뱃지 (조회수 + HOP) */}
           <div
