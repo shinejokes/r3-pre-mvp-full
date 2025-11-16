@@ -153,6 +153,19 @@ export async function GET(req: NextRequest) {
     backgroundColor: "rgba(15, 23, 42, 0.75)",
   };
 
+  const r3BadgeStyle: React.CSSProperties = {
+    padding: "8px 18px",
+    borderRadius: 9999,
+    fontSize: 26,
+    fontWeight: 700,
+    backgroundColor: "rgba(15, 23, 42, 1.0)", // 불투명 진한 남색
+    color: "#ffffff",
+    border: "2px solid rgba(248, 250, 252, 0.9)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+
   return new ImageResponse(
     (
       <div
@@ -217,7 +230,7 @@ export async function GET(req: NextRequest) {
             justifyContent: "space-between",
           }}
         >
-          {/* 상단 R3 / 도메인 */}
+          {/* 상단 도메인만 표시 */}
           <div
             style={{
               display: "flex",
@@ -227,26 +240,7 @@ export async function GET(req: NextRequest) {
               fontWeight: 700,
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              <span
-                style={{
-                  padding: "4px 14px",
-                  borderRadius: 9999,
-                  border: "1px solid rgba(248, 250, 252, 0.7)",
-                  fontSize: 24,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                }}
-              >
-                R3
-              </span>
-            </div>
+            <div />
             {hostname && (
               <span
                 style={{
@@ -286,7 +280,7 @@ export async function GET(req: NextRequest) {
             )}
           </div>
 
-                 {/* 하단 뱃지 (조회수 + HOP) */}
+          {/* 하단 뱃지 (R3 + 조회수 + HOP) */}
           <div
             style={{
               display: "flex",
@@ -295,6 +289,9 @@ export async function GET(req: NextRequest) {
               alignItems: "center",
             }}
           >
+            {/* R3 박스 */}
+            <div style={r3BadgeStyle}>R3</div>
+
             {/* 조회수 배지 */}
             <div style={badgeStyle}>
               <span style={{ marginRight: 8 }}>Views</span>
@@ -316,4 +313,3 @@ export async function GET(req: NextRequest) {
     }
   );
 }
-
