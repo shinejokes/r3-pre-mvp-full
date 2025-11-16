@@ -10,7 +10,9 @@ export default function SharePage() {
   const searchParams = useSearchParams()
 
   const initialMessageId = (params?.messageId as string) || ''
-  const parentRefCode = searchParams.get('parentRefCode') || ''
+  // ✅ searchParams가 null일 가능성을 안전하게 처리
+  const parentRefCode =
+    (searchParams && searchParams.get('parentRefCode')) || ''
 
   const [messageId, setMessageId] = useState(initialMessageId)
   const [sharerName, setSharerName] = useState('')
@@ -200,32 +202,4 @@ export default function SharePage() {
               background: 'white',
               border: '1px solid #cbd5e0',
               marginBottom: 8,
-            }}
-          >
-            {shareUrl}
-          </div>
-          {hop !== null && (
-            <div style={{ marginBottom: 8 }}>
-              <strong>hop:</strong> {hop}
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={handleCopy}
-            style={{
-              padding: '6px 10px',
-              borderRadius: 999,
-              border: 'none',
-              background: '#3182ce',
-              color: 'white',
-              fontSize: 13,
-              cursor: 'pointer',
-            }}
-          >
-            링크 복사하기
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
+            }
