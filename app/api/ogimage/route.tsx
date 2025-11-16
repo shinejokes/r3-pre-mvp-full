@@ -135,7 +135,8 @@ export async function GET(req: NextRequest) {
     // ignore
   }
 
-  const title = share.title || "R3 Shared Link";
+  // 제목: 없으면 아예 표시하지 않음
+  const title = (share.title || "").trim();
 
   // 3) 썸네일 URL 결정 (YouTube + 다양한 외부 사이트 대응)
   const thumbnailUrl = await resolveThumbnailUrl(targetUrl);
@@ -245,9 +246,6 @@ export async function GET(req: NextRequest) {
               >
                 R3
               </span>
-              <span style={{ fontSize: 20, color: "#e5e7eb" }}>
-                Rewarded Relay Registry
-              </span>
             </div>
             {hostname && (
               <span
@@ -264,30 +262,29 @@ export async function GET(req: NextRequest) {
             )}
           </div>
 
-{/* 중앙 제목 (title이 있을 때만 표시) */}
-<div
-  style={{
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    maxWidth: "1000px",
-  }}
->
-  {title && (
-    <div
-      style={{
-        fontSize: 50,
-        fontWeight: 800,
-        lineHeight: 1.2,
-        whiteSpace: "pre-wrap",
-        textShadow: "0 4px 18px rgba(15,23,42,0.95)",
-      }}
-    >
-      {title}
-    </div>
-  )}
-</div>
-
+          {/* 중앙 제목 (title이 있을 때만 표시) */}
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              maxWidth: "1000px",
+            }}
+          >
+            {title && (
+              <div
+                style={{
+                  fontSize: 50,
+                  fontWeight: 800,
+                  lineHeight: 1.2,
+                  whiteSpace: "pre-wrap",
+                  textShadow: "0 4px 18px rgba(15,23,42,0.95)",
+                }}
+              >
+                {title}
+              </div>
+            )}
+          </div>
 
           {/* 하단 뱃지 (조회수 + HOP) */}
           <div
@@ -306,16 +303,4 @@ export async function GET(req: NextRequest) {
 
             {/* HOP 배지 */}
             <div style={badgeStyle}>
-              <span style={{ marginRight: 8 }}>HOP</span>
-              <span>{hop}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    ),
-    {
-      width: 1200,
-      height: 630,
-    }
-  );
-}
+              <span style={{ marginRig
