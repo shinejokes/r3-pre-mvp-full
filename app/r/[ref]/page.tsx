@@ -17,6 +17,10 @@ export default async function R3SharePreviewPage({ params }: PageProps) {
     .eq("ref_code", refCode)
     .maybeSingle();
 
+  if (shareError) {
+    console.error("share fetch error:", shareError);
+  }
+
   if (!share) {
     return (
       <main style={{ maxWidth: 600, margin: "40px auto", fontFamily: "sans-serif" }}>
@@ -26,12 +30,17 @@ export default async function R3SharePreviewPage({ params }: PageProps) {
     );
   }
 
-  // 2) share가 가리키는 메시지(uuid 기준) 조회
-  const { data: message } = await supabase
+  // 2) share가 가리키는 메시지 조회
+  //    🔸 r3_shares.message_id (uuid) ↔ r3_messages.uuid
+  const { data: message, error: messageError } = await supabase
     .from("r3_messages")
     .select("*")
-    .eq("uuid", share.message_uuid)
+    .eq("uuid", share.message_id)
     .maybeSingle();
+
+  if (messageError) {
+    console.error("message fetch error:", messageError);
+  }
 
   if (!message) {
     return (
@@ -41,6 +50,8 @@ export default async function R3SharePreviewPage({ params }: PageProps) {
       </main>
     );
   }
+
+  const originUrl = message.origin_url ?? message.url ?? "";
 
   return (
     <main style={{ maxWidth: 600, margin: "40px auto", fontFamily: "sans-serif" }}>
@@ -60,11 +71,14 @@ export default async function R3SharePreviewPage({ params }: PageProps) {
         </p>
         <p style={{ marginTop: 8 }}>
           <strong>원본 URL:</strong>{" "}
-          <a href={message.origin_url} target="_blank" rel="noreferrer">
-            {message.origin_url}
-          </a>
+          {originUrl ? (
+            <a href={originUrl} target="_blank" rel="noreferrer">
+              {originUrl}
+            </a>
+          ) : (
+            "URL 정보 없음"
+          )}
         </p>
-
         <p style={{ marginTop: 8 }}>
           <strong>현재 hop:</strong> {share.hop ?? 1}
         </p>
@@ -73,7 +87,7 @@ export default async function R3SharePreviewPage({ params }: PageProps) {
         </p>
       </section>
 
-      {/* 2단계에서 여기 아래에 “내 링크 만들기” 버튼을 붙임 */}
+      {/* 다음 단계에서 여기 아래에 “내 링크 만들기” 버튼을 붙일 예정 */}
     </main>
   );
 }
