@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
 
     const supabase = supabaseServer();
 
-    // 1) messages 테이블에 메시지 등록
+    // 🔹 1) r3_messages 테이블에 메시지 등록 (이전에는 'messages'로 잘못 사용)
     const { data: message, error: messageError } = await supabase
-      .from("messages")              // 🔸 테이블 이름 다르면 여기만 고치면 됨
-      .insert({ title, url })
+      .from("r3_messages")
+      .insert({ title, url })          // origin_url 등을 쓰고 싶으면 여기서 추가 가능
       .select()
       .single();
 
@@ -41,13 +41,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2) r3_shares 테이블에 hop=1 share 생성
+    // 🔹 2) r3_shares 테이블에 hop=1 share 생성
     const refCode = generateRefCode();
     const { data: share, error: shareError } = await supabase
-      .from("r3_shares")            // 🔸 shares 테이블 이름 확인
+      .from("r3_shares")
       .insert({
-        message_id: message.id,     // 🔸 메시지 PK 컬럼 이름이 다르면 수정
-        ref_code: refCode,          // 🔸 ref_code 컬럼 이름이 다르면 수정
+        message_id: message.id,   // r3_shares.message_id ↔ r3_messages.id
+        ref_code: refCode,
         hop: 1,
       })
       .select()
@@ -61,11 +61,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3) 공유 링크 URL 만들기
+    // 🔹 3) 공유 링크 URL 만들기
     const origin = req.nextUrl.origin; // 예: https://r3-pre-mvp-full.vercel.app
     const shareUrl = `${origin}/r/${share.ref_code}`;
 
-    // 4) 프론트엔드에서 쓰기 좋은 JSON 반환
+    // 🔹 4) 프론트엔드로 JSON 반환
     return NextResponse.json({
       ok: true,
       shareUrl,
