@@ -2,9 +2,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "../../../../lib/supabaseServer";
 
-export async function GET(_req: NextRequest, context: any) {
-  // Next가 주는 context에서 refCode 꺼내기
-  const refCode = context?.params?.ref as string | undefined;
+export async function GET(req: NextRequest) {
+  // 🔹 요청 URL에서 직접 refCode 뽑기: /api/share/RCgm2oo → "RCgm2oo"
+  const url = new URL(req.url);
+  const segments = url.pathname.split("/").filter(Boolean);
+  const refCode = segments[segments.length - 1];
 
   if (!refCode) {
     return NextResponse.json(
