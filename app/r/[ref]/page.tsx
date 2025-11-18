@@ -9,12 +9,12 @@ type PageProps = {
 export default async function R3SharePreviewPage({ params }: PageProps) {
   const supabase = supabaseServer();
 
-  // 🔹 params 안의 첫 번째 키를 동적으로 가져와 refCode로 사용
+  // params 안의 첫 번째 키를 refCode로 사용 (예: { ref: "LoBwAnW" })
   const paramKeys = Object.keys(params || {});
   const firstKey = paramKeys.length > 0 ? paramKeys[0] : "";
   const refCode = firstKey ? (params as any)[firstKey] : "";
 
-  // 혹시라도 refCode를 못 얻으면 바로 안내
+  // refCode를 못 얻으면 바로 안내
   if (!refCode) {
     return (
       <main style={{ maxWidth: 600, margin: "40px auto", fontFamily: "sans-serif" }}>
@@ -51,16 +51,12 @@ export default async function R3SharePreviewPage({ params }: PageProps) {
     );
   }
 
-  // 2) 화면에 쓸 값 정리: share 한 줄만으로도 충분
-  const title =
-    share.title ??
-    "(제목 없음)";
-
+  // 화면에 쓸 값: share 한 줄만으로 충분
+  const title = share.title ?? "(제목 없음)";
   const originUrl =
     share.original_url ??
     share.target_url ??
     "";
-
   const hop = share.hop ?? 1;
 
   return (
