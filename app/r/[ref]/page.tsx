@@ -3,12 +3,29 @@ import React from "react";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
 type PageProps = {
-  params: { ref: string };
+  params: Record<string, string>;
 };
 
 export default async function R3SharePreviewPage({ params }: PageProps) {
   const supabase = supabaseServer();
-  const refCode = params.ref;
+
+  // 🔹 params 안의 첫 번째 키를 동적으로 가져와 refCode로 사용
+  const paramKeys = Object.keys(params || {});
+  const firstKey = paramKeys.length > 0 ? paramKeys[0] : "";
+  const refCode = firstKey ? (params as any)[firstKey] : "";
+
+  // 혹시라도 refCode를 못 얻으면 바로 안내
+  if (!refCode) {
+    return (
+      <main style={{ maxWidth: 600, margin: "40px auto", fontFamily: "sans-serif" }}>
+        <h1>R3 Link Preview</h1>
+        <p>등록된 대상 URL을 찾을 수 없습니다.</p>
+        <p style={{ marginTop: 8, fontSize: 12, color: "#666" }}>
+          (params가 비어 있습니다)
+        </p>
+      </main>
+    );
+  }
 
   // 1) ref_code로 r3_shares에서 share 찾기
   const { data: share, error: shareError } = await supabase
@@ -21,7 +38,7 @@ export default async function R3SharePreviewPage({ params }: PageProps) {
     console.error("share fetch error:", shareError);
   }
 
-  // share 자체를 못 찾으면 정말로 없는 링크
+  // share 자체를 못 찾으면 진짜 없는 링크
   if (!share) {
     return (
       <main style={{ maxWidth: 600, margin: "40px auto", fontFamily: "sans-serif" }}>
@@ -34,31 +51,13 @@ export default async function R3SharePreviewPage({ params }: PageProps) {
     );
   }
 
-  // 2) 가능하면 메시지도 한번 조회 (추가 정보용, 프리뷰는 share만으로도 가능)
-  let message: any = null;
-  if (share.message_id) {
-    const { data: msg, error: msgError } = await supabase
-      .from("r3_messages")
-      .select("*")
-      .eq("uuid", share.message_id)
-      .maybeSingle();
-
-    if (msgError) {
-      console.error("message fetch error:", msgError);
-    }
-    message = msg;
-  }
-
-  // 3) 화면에 쓸 값 정리: share에 있으면 share 기준, 없으면 message 기준
+  // 2) 화면에 쓸 값 정리: share 한 줄만으로도 충분
   const title =
     share.title ??
-    message?.title ??
     "(제목 없음)";
 
   const originUrl =
     share.original_url ??
-    message?.origin_url ??
-    message?.url ??
     share.target_url ??
     "";
 
