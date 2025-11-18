@@ -2,12 +2,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "../../../../lib/supabaseServer";
 
-type RouteParams = {
-  params: { ref: string };
-};
-
-export async function GET(_req: NextRequest, { params }: RouteParams) {
-  const refCode = params.ref;
+export async function GET(_req: NextRequest, context: any) {
+  // Next가 주는 context에서 refCode 꺼내기
+  const refCode = context?.params?.ref as string | undefined;
 
   if (!refCode) {
     return NextResponse.json(
