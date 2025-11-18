@@ -27,7 +27,6 @@ export async function POST(req: NextRequest) {
     const supabase = supabaseServer();
 
     // 1) r3_messages에 메시지 저장
-    //    - 실제 스키마에 맞춰 origin_url, url 모두 채워줌
     const { data: message, error: messageError } = await supabase
       .from("r3_messages")
       .insert({
@@ -47,14 +46,17 @@ export async function POST(req: NextRequest) {
     }
 
     // 2) r3_shares에 hop=1 share 생성
-    //    - 스키마 상 두 번째 컬럼이 message 쪽 uuid라서 message_uuid로 가정
+    //    🔸 여기서 꼭 message_id 컬럼에 message.uuid 를 넣어야 함!
     const refCode = generateRefCode();
     const { data: share, error: shareError } = await supabase
       .from("r3_shares")
       .insert({
-        message_uuid: message.uuid, // ★ 중요: message_id가 아니라 message.uuid 사용
+        message_id: message.uuid,      // ★ 핵심 수정
         ref_code: refCode,
         hop: 1,
+        original_url: message.origin_url,
+        title: message.title,
+        target_url: message.url,
       })
       .select()
       .single();
