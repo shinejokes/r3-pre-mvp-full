@@ -1,62 +1,94 @@
 // app/r/[ref]/page.tsx
-import React from "react";
-import { supabaseServer } from "../../../lib/supabaseServer";
+"use client";
 
-type PageProps = {
-  params: Record<string, string>;
+import React, { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+
+type ShareRow = {
+  ref_code: string;
+  title: string | null;
+  original_url: string | null;
+  target_url: string | null;
+  hop: number | null;
+  message_id: string | null;
 };
 
-export default async function R3SharePreviewPage({ params }: PageProps) {
-  const supabase = supabaseServer();
+type State =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ok"; share: ShareRow };
 
-  // params 안의 첫 번째 키를 refCode로 사용 (예: { ref: "LoBwAnW" })
-  const paramKeys = Object.keys(params || {});
-  const firstKey = paramKeys.length > 0 ? paramKeys[0] : "";
-  const refCode = firstKey ? (params as any)[firstKey] : "";
+export default function R3SharePreviewPage() {
+  const pathname = usePathname();
+  const [state, setState] = useState<State>({ status: "loading" });
 
-  // refCode를 못 얻으면 바로 안내
-  if (!refCode) {
+  useEffect(() => {
+    if (!pathname) return;
+
+    // /r/LoBwAnW → ["r","LoBwAnW"] → 마지막 조각이 refCode
+    const segments = pathname.split("/").filter(Boolean);
+    const refCode = segments[segments.length - 1];
+
+    if (!refCode) {
+      setState({
+        status: "error",
+        message: "URL에 refCode가 없습니다.",
+      });
+      return;
+    }
+
+    async function load() {
+      try {
+        const res = await fetch(`/api/share/${refCode}`);
+        const json = await res.json();
+
+        if (!res.ok) {
+          setState({
+            status: "error",
+            message: json?.error || "등록된 대상 URL을 찾을 수 없습니다.",
+          });
+          return;
+        }
+
+        setState({
+          status: "ok",
+          share: json.share as ShareRow,
+        });
+      } catch (e: any) {
+        setState({
+          status: "error",
+          message: e?.message || "알 수 없는 오류",
+        });
+      }
+    }
+
+    load();
+  }, [pathname]);
+
+  if (state.status === "loading") {
+    return (
+      <main style={{ maxWidth: 600, margin: "40px auto", fontFamily: "sans-serif" }}>
+        <h1>R3 Link Preview</h1>
+        <p>불러오는 중입니다…</p>
+      </main>
+    );
+  }
+
+  if (state.status === "error") {
     return (
       <main style={{ maxWidth: 600, margin: "40px auto", fontFamily: "sans-serif" }}>
         <h1>R3 Link Preview</h1>
         <p>등록된 대상 URL을 찾을 수 없습니다.</p>
         <p style={{ marginTop: 8, fontSize: 12, color: "#666" }}>
-          (params가 비어 있습니다)
+          ({state.message})
         </p>
       </main>
     );
   }
 
-  // 1) ref_code로 r3_shares에서 share 찾기
-  const { data: share, error: shareError } = await supabase
-    .from("r3_shares")
-    .select("*")
-    .eq("ref_code", refCode)
-    .maybeSingle();
-
-  if (shareError) {
-    console.error("share fetch error:", shareError);
-  }
-
-  // share 자체를 못 찾으면 진짜 없는 링크
-  if (!share) {
-    return (
-      <main style={{ maxWidth: 600, margin: "40px auto", fontFamily: "sans-serif" }}>
-        <h1>R3 Link Preview</h1>
-        <p>등록된 대상 URL을 찾을 수 없습니다.</p>
-        <p style={{ marginTop: 8, fontSize: 12, color: "#666" }}>
-          (ref_code: {refCode})
-        </p>
-      </main>
-    );
-  }
-
-  // 화면에 쓸 값: share 한 줄만으로 충분
+  const { share } = state;
   const title = share.title ?? "(제목 없음)";
-  const originUrl =
-    share.original_url ??
-    share.target_url ??
-    "";
+  const originUrl = share.original_url ?? share.target_url ?? "";
   const hop = share.hop ?? 1;
 
   return (
@@ -75,7 +107,6 @@ export default async function R3SharePreviewPage({ params }: PageProps) {
         <p>
           <strong>제목:</strong> {title}
         </p>
-
         <p style={{ marginTop: 8 }}>
           <strong>원본 URL:</strong>{" "}
           {originUrl ? (
@@ -86,21 +117,15 @@ export default async function R3SharePreviewPage({ params }: PageProps) {
             "URL 정보 없음"
           )}
         </p>
-
         <p style={{ marginTop: 8 }}>
-          <strong>현재 hop:</strong> {hop}
-        </p>
-
+          <strong>현재 hop:</strong> {hop}</p>
         <p style={{ marginTop: 4, fontSize: 13, color: "#666" }}>
           (이 페이지는 공유된 썸네일이 연결되는 “중간 랜딩 페이지”입니다.)
         </p>
-
         <p style={{ marginTop: 8, fontSize: 11, color: "#999" }}>
           ref_code: {share.ref_code} / message_id: {share.message_id ?? "NULL"}
         </p>
       </section>
-
-      {/* 다음 단계에서 여기 아래에 “내 링크 만들기” 버튼을 붙일 예정 */}
     </main>
   );
 }
