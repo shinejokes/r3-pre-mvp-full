@@ -1,6 +1,6 @@
 // app/api/ogimage/route.ts
 import { ImageResponse } from "next/og";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { supabaseServer } from "../../../lib/supabaseServer";
 
 export const runtime = "edge";
 

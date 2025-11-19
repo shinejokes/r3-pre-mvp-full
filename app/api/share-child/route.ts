@@ -1,6 +1,6 @@
 // app/api/share-child/route.ts
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { supabaseServer } from "../../../lib/supabaseServer";
 
 export const runtime = "edge";
 
