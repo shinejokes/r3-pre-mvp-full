@@ -1,131 +1,148 @@
 // app/r/[ref]/page.tsx
-"use client";
+import { Metadata } from "next";
+import { supabaseServer } from "../../../lib/supabaseServer";
+import ShareActions from "./ShareActions";
 
-import React, { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-
-type ShareRow = {
-  ref_code: string;
-  title: string | null;
-  original_url: string | null;
-  target_url: string | null;
-  hop: number | null;
-  message_id: string | null;
+type PageProps = {
+  params: {
+    ref: string;
+  };
 };
 
-type State =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "ok"; share: ShareRow };
+const BASE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://r3-pre-mvp-full.vercel.app";
 
-export default function R3SharePreviewPage() {
-  const pathname = usePathname();
-  const [state, setState] = useState<State>({ status: "loading" });
+// --- OG 썸네일용 메타데이터 (카카오 프리뷰용) ---
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const supabase = supabaseServer();
 
-  useEffect(() => {
-    if (!pathname) return;
+  const { data: share } = await supabase
+    .from("r3_shares")
+    .select(
+      `
+      ref_code,
+      hop,
+      r3_messages (
+        title,
+        url
+      )
+    `
+    )
+    .eq("ref_code", params.ref)
+    .maybeSingle();
 
-    // /r/LoBwAnW → ["r","LoBwAnW"] → 마지막 조각이 refCode
-    const segments = pathname.split("/").filter(Boolean);
-    const refCode = segments[segments.length - 1];
+  if (!share || !share.r3_messages) {
+    const title = "R3 Home 임시 홈페이지";
+    const description = "R3 테스트용 링크입니다.";
 
-    if (!refCode) {
-      setState({
-        status: "error",
-        message: "URL에 refCode가 없습니다.",
-      });
-      return;
-    }
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+      },
+    };
+  }
 
-    async function load() {
-      try {
-        const res = await fetch(`/api/share/${refCode}`);
-        const json = await res.json();
+  const message = share.r3_messages;
+  const title = message.title || "R3 공유 링크";
+  const description = `이 메시지는 손만두 hop ${share.hop ?? 1} 링크입니다.`;
 
-        if (!res.ok) {
-          setState({
-            status: "error",
-            message: json?.error || "등록된 대상 URL을 찾을 수 없습니다.",
-          });
-          return;
-        }
+  const ogImageUrl = `${BASE_URL}/api/ogimage?shareId=${share.ref_code}`;
 
-        setState({
-          status: "ok",
-          share: json.share as ShareRow,
-        });
-      } catch (e: any) {
-        setState({
-          status: "error",
-          message: e?.message || "알 수 없는 오류",
-        });
-      }
-    }
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+  };
+}
 
-    load();
-  }, [pathname]);
+// --- 실제 프리뷰 페이지 ---
+export default async function SharePage({ params }: PageProps) {
+  const supabase = supabaseServer();
 
-  if (state.status === "loading") {
+  const { data: share, error } = await supabase
+    .from("r3_shares")
+    .select(
+      `
+      id,
+      ref_code,
+      hop,
+      r3_messages (
+        id,
+        title,
+        url
+      )
+    `
+    )
+    .eq("ref_code", params.ref)
+    .single();
+
+  if (error || !share) {
     return (
-      <main style={{ maxWidth: 600, margin: "40px auto", fontFamily: "sans-serif" }}>
-        <h1>R3 Link Preview</h1>
-        <p>불러오는 중입니다…</p>
+      <main
+        style={{
+          padding: 24,
+          fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        }}
+      >
+        <h1>공유를 찾을 수 없습니다</h1>
+        <p>잘못된 링크이거나 삭제된 링크일 수 있습니다.</p>
       </main>
     );
   }
 
-  if (state.status === "error") {
-    return (
-      <main style={{ maxWidth: 600, margin: "40px auto", fontFamily: "sans-serif" }}>
-        <h1>R3 Link Preview</h1>
-        <p>등록된 대상 URL을 찾을 수 없습니다.</p>
-        <p style={{ marginTop: 8, fontSize: 12, color: "#666" }}>
-          ({state.message})
-        </p>
-      </main>
-    );
-  }
-
-  const { share } = state;
-  const title = share.title ?? "(제목 없음)";
-  const originUrl = share.original_url ?? share.target_url ?? "";
+  const message = share.r3_messages;
   const hop = share.hop ?? 1;
 
   return (
-    <main style={{ maxWidth: 600, margin: "40px auto", fontFamily: "sans-serif" }}>
-      <h1>R3 Link Preview</h1>
+    <main
+      style={{
+        padding: 24,
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        maxWidth: 800,
+        margin: "0 auto",
+      }}
+    >
+      <h1 style={{ fontSize: 24, marginBottom: 8 }}>R3 메시지 프리뷰</h1>
+      <p style={{ marginBottom: 16, fontSize: 14, color: "#555" }}>
+        이 링크의 hop 값은 <b>{hop}</b> 입니다. (ref: <code>{share.ref_code}</code>)
+      </p>
 
       <section
         style={{
-          marginTop: 24,
-          padding: 16,
           border: "1px solid #ddd",
           borderRadius: 8,
-          background: "#fafafa",
+          padding: 16,
+          marginBottom: 16,
         }}
       >
-        <p>
-          <strong>제목:</strong> {title}
-        </p>
-        <p style={{ marginTop: 8 }}>
-          <strong>원본 URL:</strong>{" "}
-          {originUrl ? (
-            <a href={originUrl} target="_blank" rel="noreferrer">
-              {originUrl}
+        <h2 style={{ fontSize: 20, marginBottom: 8 }}>
+          {message?.title ?? "제목 없는 메시지"}
+        </h2>
+        {message?.url && (
+          <p style={{ wordBreak: "break-all", marginBottom: 8 }}>
+            원본 링크:{" "}
+            <a href={message.url} target="_blank" rel="noopener noreferrer">
+              {message.url}
             </a>
-          ) : (
-            "URL 정보 없음"
-          )}
-        </p>
-        <p style={{ marginTop: 8 }}>
-          <strong>현재 hop:</strong> {hop}</p>
-        <p style={{ marginTop: 4, fontSize: 13, color: "#666" }}>
-          (이 페이지는 공유된 썸네일이 연결되는 “중간 랜딩 페이지”입니다.)
-        </p>
-        <p style={{ marginTop: 8, fontSize: 11, color: "#999" }}>
-          ref_code: {share.ref_code} / message_id: {share.message_id ?? "NULL"}
+          </p>
+        )}
+        <p style={{ fontSize: 13, color: "#777" }}>
+          이 페이지를 카카오톡 등에 공유하면, OG 이미지로 조회수·hop 배지가
+          포함된 썸네일이 표시됩니다.
         </p>
       </section>
+
+      {/* 여기서 내 링크 만들기 버튼을 렌더링 */}
+      <ShareActions refCode={share.ref_code} />
     </main>
   );
 }
