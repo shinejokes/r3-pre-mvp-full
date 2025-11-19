@@ -61,18 +61,17 @@ export default function ShareLandingPage({ params }: PageProps) {
       }
 
       const data = await res.json();
+      console.log("share-child response:", data);
 
-      const refFromApi: string | undefined = data.ref_code;
-      let finalUrl: string | undefined = data.url; // 서버가 보내 준 url을 최우선
+      // 서버가 무엇을 주든, ref_code만 받아서 Vercel 도메인으로 직접 조합
+      const refFromApi: string | undefined =
+        data.ref_code || data.ref || data.shareRef;
 
-      // 혹시 url이 없다면, ref_code로 강제로 Vercel 도메인 조합
-      if (!finalUrl && refFromApi) {
-        finalUrl = `https://r3-pre-mvp-full.vercel.app/r/${refFromApi}`;
+      if (!refFromApi) {
+        throw new Error("서버에서 ref_code를 받지 못했습니다.");
       }
 
-      if (!finalUrl) {
-        throw new Error("새 링크 URL을 만들 수 없습니다.");
-      }
+      const finalUrl = `https://r3-pre-mvp-full.vercel.app/r/${refFromApi}`;
 
       setMyLink(finalUrl);
       if (typeof data.hop === "number") {
