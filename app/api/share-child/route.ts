@@ -2,7 +2,7 @@
 import { NextRequest } from "next/server";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 // ref_code용 간단한 랜덤 문자열 생성기
 function generateRefCode(length = 7): string {
@@ -16,8 +16,11 @@ function generateRefCode(length = 7): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const parentRef: string | undefined = body?.parentRef;
+const body = await req.json();
+console.log("share-child body:", body);
+const parentRef = body?.parentRef;
+console.log("parentRef:", parentRef);
+
 
     if (!parentRef) {
       return new Response("Missing parentRef", { status: 400 });
