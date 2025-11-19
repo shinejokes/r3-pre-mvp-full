@@ -8,40 +8,27 @@ type PageProps = {
   params: { ref: string };
 };
 
-// 카카오/페북 썸네일을 위한 메타데이터
+// 카카오/페북 썸네일 메타데이터
 export async function generateMetadata({ params }: PageProps) {
   const ref = params.ref;
   const supabase = supabaseServer();
 
-  // ref_code → share → message(title, url) 조회 (실패하면 그냥 기본값)
   const { data: share } = await supabase
     .from("r3_shares")
-    .select("id, message_id, hop")
+    .select("ref_code, title, target_url")
     .eq("ref_code", ref)
     .maybeSingle();
-
-  let title = "R3 공유 링크";
-  let description = "R3를 통해 공유된 링크입니다.";
-  let originUrl: string | undefined;
-
-  if (share?.message_id) {
-    const { data: message } = await supabase
-      .from("r3_messages")
-      .select("title, url")
-      .eq("id", share.message_id)
-      .maybeSingle();
-
-    if (message?.title) title = message.title;
-    if (message?.url) {
-      description = message.url;
-      originUrl = message.url;
-    }
-  }
 
   const baseUrl =
     process.env.R3_APP_BASE_URL ||
     process.env.NEXT_PUBLIC_BASE_URL ||
     "https://r3-pre-mvp-full.vercel.app";
+
+  const defaultTitle = "R3 공유 링크";
+  const defaultDesc = "R3를 통해 공유된 링크입니다.";
+
+  const title = share?.title || defaultTitle;
+  const description = share?.target_url || defaultDesc;
 
   const ogImageUrl = `${baseUrl.replace(
     /\/$/,
@@ -54,11 +41,7 @@ export async function generateMetadata({ params }: PageProps) {
     openGraph: {
       title,
       description,
-      images: [
-        {
-          url: ogImageUrl,
-        },
-      ],
+      images: [{ url: ogImageUrl }],
       url: `${baseUrl.replace(/\/$/, "")}/r/${ref}`,
     },
     twitter: {
@@ -74,11 +57,15 @@ export default async function SharePage({ params }: PageProps) {
   const ref = params.ref;
   const supabase = supabaseServer();
 
-  const { data: share } = await supabase
+  const { data: share, error } = await supabase
     .from("r3_shares")
-    .select("id, message_id, hop")
+    .select("id, ref_code, hop, title, target_url")
     .eq("ref_code", ref)
     .maybeSingle();
+
+  if (error) {
+    console.error("[R3] share load error:", error);
+  }
 
   if (!share) {
     return (
@@ -108,15 +95,8 @@ export default async function SharePage({ params }: PageProps) {
     );
   }
 
-  // 원본 URL 조회 (없으면 undefined)
-  let originUrl: string | undefined;
-  const { data: message } = await supabase
-    .from("r3_messages")
-    .select("url, title")
-    .eq("id", share.message_id)
-    .maybeSingle();
-
-  if (message?.url) originUrl = message.url;
+  const originUrl = share.target_url || undefined;
+  const title = share.title || "R3 공유 링크";
 
   return (
     <main
@@ -131,10 +111,10 @@ export default async function SharePage({ params }: PageProps) {
       }}
     >
       <ShareClient
-        parentRef={ref}
+        parentRef={share.ref_code}
         hop={share.hop ?? 1}
         originUrl={originUrl}
-        title={message?.title ?? "R3 공유 링크"}
+        title={title}
       />
     </main>
   );
