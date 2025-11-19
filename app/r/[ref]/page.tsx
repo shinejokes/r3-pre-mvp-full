@@ -1,16 +1,47 @@
-// app/r/[ref]/page.tsx
+// app/r/[ref]/page.tsx  (폴더 이름이 [ref]가 아니어도 이 코드 그대로 써도 됩니다)
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+type PageParams = {
+  // 폴더 이름이 [ref]일 수도, [ref_code]일 수도 있어서 모두 optional로 둔다
+  ref?: string;
+  ref_code?: string;
+  shareId?: string;
+  [key: string]: string | undefined;
+};
 
 type PageProps = {
-  params: {
-    ref: string; // 폴더 이름 [ref]와 동일해야 함
-  };
+  params: PageParams;
 };
 
 export default function ShareLandingPage({ params }: PageProps) {
-  const parentRef = params.ref;
+  // 1) URL 파라미터, 2) 폴더 이름이 달라도 되게, 3) 최후에는 location.pathname 에서 추출
+  const [parentRef, setParentRef] = useState<string>("");
+
+  useEffect(() => {
+    // 1) params 안에서 후보들을 찾아본다
+    const fromParams =
+      params.ref ||
+      params.ref_code ||
+      params.shareId ||
+      Object.values(params).find((v) => typeof v === "string");
+
+    if (fromParams) {
+      setParentRef(fromParams);
+      return;
+    }
+
+    // 2) 그래도 없으면 URL에서 직접 추출 (/r/RCgm2oo 의 마지막 조각)
+    if (typeof window !== "undefined") {
+      const parts = window.location.pathname.split("/").filter(Boolean);
+      const last = parts[parts.length - 1];
+      if (last) {
+        setParentRef(last);
+      }
+    }
+  }, [params]);
+
   const [loading, setLoading] = useState(false);
   const [myLink, setMyLink] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +51,10 @@ export default function ShareLandingPage({ params }: PageProps) {
     try {
       setLoading(true);
       setError(null);
+
+      if (!parentRef) {
+        throw new Error("원본 링크 코드(parentRef)를 찾을 수 없습니다.");
+      }
 
       const res = await fetch("/api/share-child", {
         method: "POST",
@@ -106,7 +141,7 @@ export default function ShareLandingPage({ params }: PageProps) {
               fontSize: "12px",
             }}
           >
-            {parentRef}
+            {parentRef || "알 수 없는"}
           </code>{" "}
           링크를 통해 들어온 화면입니다.
         </p>
@@ -119,7 +154,7 @@ export default function ShareLandingPage({ params }: PageProps) {
 
         <button
           onClick={handleMakeMyLink}
-          disabled={loading}
+          disabled={loading || !parentRef}
           style={{
             width: "100%",
             padding: "12px 16px",
@@ -127,12 +162,17 @@ export default function ShareLandingPage({ params }: PageProps) {
             border: "none",
             fontSize: "16px",
             fontWeight: 600,
-            cursor: loading ? "default" : "pointer",
-            background: loading ? "#bbbbbb" : "#0070f3",
+            cursor: loading || !parentRef ? "default" : "pointer",
+            background:
+              loading || !parentRef ? "#bbbbbb" : "#0070f3",
             color: "#ffffff",
           }}
         >
-          {loading ? "링크 생성 중..." : "내 링크 만들기"}
+          {loading
+            ? "링크 생성 중..."
+            : parentRef
+            ? "내 링크 만들기"
+            : "원본 코드 확인 중..."}
         </button>
 
         {error && (
