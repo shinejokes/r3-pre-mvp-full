@@ -1,10 +1,9 @@
-// app/r/[ref]/page.tsx  (폴더 이름이 [ref]가 아니어도 이 코드 그대로 써도 됩니다)
+// app/r/[ref]/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type PageParams = {
-  // 폴더 이름이 [ref]일 수도, [ref_code]일 수도 있어서 모두 optional로 둔다
   ref?: string;
   ref_code?: string;
   shareId?: string;
@@ -16,11 +15,9 @@ type PageProps = {
 };
 
 export default function ShareLandingPage({ params }: PageProps) {
-  // 1) URL 파라미터, 2) 폴더 이름이 달라도 되게, 3) 최후에는 location.pathname 에서 추출
   const [parentRef, setParentRef] = useState<string>("");
 
   useEffect(() => {
-    // 1) params 안에서 후보들을 찾아본다
     const fromParams =
       params.ref ||
       params.ref_code ||
@@ -32,13 +29,10 @@ export default function ShareLandingPage({ params }: PageProps) {
       return;
     }
 
-    // 2) 그래도 없으면 URL에서 직접 추출 (/r/RCgm2oo 의 마지막 조각)
     if (typeof window !== "undefined") {
       const parts = window.location.pathname.split("/").filter(Boolean);
       const last = parts[parts.length - 1];
-      if (last) {
-        setParentRef(last);
-      }
+      if (last) setParentRef(last);
     }
   }, [params]);
 
@@ -68,12 +62,12 @@ export default function ShareLandingPage({ params }: PageProps) {
 
       const data = await res.json();
 
-      const urlFromApi: string | undefined = data.url;
       const refFromApi: string | undefined = data.ref_code;
+      let finalUrl: string | undefined = data.url; // 서버가 보내 준 url을 최우선
 
-      let finalUrl = urlFromApi;
-      if (!finalUrl && typeof window !== "undefined" && refFromApi) {
-        finalUrl = `${window.location.origin}/r/${refFromApi}`;
+      // 혹시 url이 없다면, ref_code로 강제로 Vercel 도메인 조합
+      if (!finalUrl && refFromApi) {
+        finalUrl = `https://r3-pre-mvp-full.vercel.app/r/${refFromApi}`;
       }
 
       if (!finalUrl) {
@@ -163,8 +157,7 @@ export default function ShareLandingPage({ params }: PageProps) {
             fontSize: "16px",
             fontWeight: 600,
             cursor: loading || !parentRef ? "default" : "pointer",
-            background:
-              loading || !parentRef ? "#bbbbbb" : "#0070f3",
+            background: loading || !parentRef ? "#bbbbbb" : "#0070f3",
             color: "#ffffff",
           }}
         >
