@@ -12,7 +12,7 @@ type PageProps = {
 const BASE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://r3-pre-mvp-full.vercel.app";
 
-// --- OG 썸네일용 메타데이터 (카카오 프리뷰용) ---
+// --- OG 썸네일용 메타데이터 ---
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -47,10 +47,12 @@ export async function generateMetadata({
     };
   }
 
-  const message = share.r3_messages;
-  const title = message.title || "R3 공유 링크";
-  const description = `이 메시지는 손만두 hop ${share.hop ?? 1} 링크입니다.`;
+  // 🔧 r3_messages 가 배열일 수도 있으니 첫 번째 것만 사용
+  const rawMessage: any = (share as any).r3_messages;
+  const message = Array.isArray(rawMessage) ? rawMessage[0] : rawMessage;
 
+  const title = message?.title || "R3 공유 링크";
+  const description = `이 메시지는 손만두 hop ${share.hop ?? 1} 링크입니다.`;
   const ogImageUrl = `${BASE_URL}/api/ogimage?shareId=${share.ref_code}`;
 
   return {
@@ -99,7 +101,9 @@ export default async function SharePage({ params }: PageProps) {
     );
   }
 
-  const message = share.r3_messages;
+  // 🔧 여기서도 같은 방식으로 처리
+  const rawMessage: any = (share as any).r3_messages;
+  const message = Array.isArray(rawMessage) ? rawMessage[0] : rawMessage;
   const hop = share.hop ?? 1;
 
   return (
@@ -141,7 +145,7 @@ export default async function SharePage({ params }: PageProps) {
         </p>
       </section>
 
-      {/* 여기서 내 링크 만들기 버튼을 렌더링 */}
+      {/* 내 링크 만들기 버튼 */}
       <ShareActions refCode={share.ref_code} />
     </main>
   );
