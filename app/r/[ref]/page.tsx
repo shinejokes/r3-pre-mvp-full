@@ -18,25 +18,17 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const supabase = supabaseServer();
 
+  // 1) r3_shares 에서 조인 없이 row만 조회
   const { data: share } = await supabase
     .from("r3_shares")
-    .select(
-      `
-      ref_code,
-      hop,
-      r3_messages (
-        title,
-        url
-      )
-    `
-    )
+    .select("ref_code, hop, message_id")
     .eq("ref_code", params.ref)
     .maybeSingle();
 
-  if (!share || !share.r3_messages) {
+  // share 를 못 찾은 경우: 임시 기본 메타데이터
+  if (!share) {
     const title = "R3 Home 임시 홈페이지";
     const description = "R3 테스트용 링크입니다.";
-
     return {
       title,
       description,
@@ -47,11 +39,21 @@ export async function generateMetadata({
     };
   }
 
-  // 🔧 r3_messages 가 배열일 수도 있으니 첫 번째 것만 사용
-  const rawMessage: any = (share as any).r3_messages;
-  const message = Array.isArray(rawMessage) ? rawMessage[0] : rawMessage;
+  // 2) message_id 를 이용해 r3_messages 를 별도 조회(실패해도 앱은 동작)
+  let messageTitle: string | undefined;
+  try {
+    const { data: message } = await supabase
+      .from("r3_messages")
+      .select("id, title")
+      .eq("id", share.message_id)
+      .maybeSingle();
 
-  const title = message?.title || "R3 공유 링크";
+    messageTitle = message?.title ?? undefined;
+  } catch {
+    // 메타데이터에서 제목이 없어도 치명적이지 않으니 무시
+  }
+
+  const title = messageTitle || "R3 공유 링크";
   const description = `이 메시지는 손만두 hop ${share.hop ?? 1} 링크입니다.`;
   const ogImageUrl = `${BASE_URL}/api/ogimage?shareId=${share.ref_code}`;
 
@@ -70,20 +72,10 @@ export async function generateMetadata({
 export default async function SharePage({ params }: PageProps) {
   const supabase = supabaseServer();
 
+  // 1) 먼저 r3_shares 를 조인 없이 조회
   const { data: share, error } = await supabase
     .from("r3_shares")
-    .select(
-      `
-      id,
-      ref_code,
-      hop,
-      r3_messages (
-        id,
-        title,
-        url
-      )
-    `
-    )
+    .select("id, ref_code, hop, message_id")
     .eq("ref_code", params.ref)
     .single();
 
@@ -101,9 +93,20 @@ export default async function SharePage({ params }: PageProps) {
     );
   }
 
-  // 🔧 여기서도 같은 방식으로 처리
-  const rawMessage: any = (share as any).r3_messages;
-  const message = Array.isArray(rawMessage) ? rawMessage[0] : rawMessage;
+  // 2) message_id 로 r3_messages 조회 (없으면 제목/URL만 비우고 계속 진행)
+  let message: { id: number; title?: string | null; url?: string | null } | null =
+    null;
+
+  const { data: msgData } = await supabase
+    .from("r3_messages")
+    .select("id, title, url")
+    .eq("id", share.message_id)
+    .maybeSingle();
+
+  if (msgData) {
+    message = msgData;
+  }
+
   const hop = share.hop ?? 1;
 
   return (
