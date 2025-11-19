@@ -45,9 +45,11 @@ export async function GET(req: Request) {
     const hits = hitRow?.total ?? 0;
 
     // 4) 제목 자동 줄바꿈 (최대 18자 단위)
+    // 4) 제목 자동 줄바꿈 (최대 18자 단위)
     function wrapText(str: string, max = 18): string[] {
-      const out = [];
-      let buf = "";
+      const out: string[] = [];
+      let buf: string = "";
+
       for (const ch of str) {
         buf += ch;
         if (buf.length >= max) {
@@ -55,9 +57,14 @@ export async function GET(req: Request) {
           buf = "";
         }
       }
-      if (buf.length > 0) out.push(buf);
+
+      if (buf.length > 0) {
+        out.push(buf);
+      }
+
       return out;
     }
+
 
     const wrappedTitle = wrapText(title);
 
