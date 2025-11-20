@@ -3,6 +3,7 @@ import { supabaseServer } from "../../../lib/supabaseServer";
 import ShareClient from "./ShareClient";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs"; // ★ supabase-js를 위해 Node 런타임 강제
 
 type PageProps = {
   params: { ref: string };
@@ -65,6 +66,8 @@ export default async function SharePage({ params }: PageProps) {
 
   if (error) {
     console.error("[R3] share load error:", error);
+  } else {
+    console.log("[R3] share loaded for ref:", ref, share);
   }
 
   if (!share) {
