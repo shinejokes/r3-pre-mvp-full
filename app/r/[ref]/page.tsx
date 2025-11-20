@@ -14,27 +14,29 @@ type PageProps = {
 
 export default async function RedirectPage({ params }: PageProps) {
   const supabase = supabaseServer();
-  const h = headers();
 
-  // 1) Next가 넘겨 준 params.ref
+  // 1) Next가 넘겨 준 params.ref 사용
   let ref = params?.ref;
 
-  // 2) 혹시 params가 비어 있으면, 헤더에서 실제 경로를 직접 파싱
+  // 2) params가 비어 있으면, 헤더에서 경로를 직접 파싱
   if (!ref) {
+    const h = await headers(); // ★ 여기서 Promise를 실제 헤더 객체로 받음
+
     const rawPath =
       h.get("x-invoke-path") ||
       h.get("x-matched-path") ||
       h.get("next-url") ||
       "";
 
-    // 보통 "/r/RCgm2oo" 형태이므로, 두 번째 세그먼트가 ref 코드
-    const parts = rawPath.split("/").filter(Boolean); // ["r", "RCgm2oo"]
+    // 보통 "/r/RCgm2oo" 같은 형태 → ["r", "RCgm2oo"]
+    const parts = rawPath.split("/").filter(Boolean);
+
     if (parts.length >= 2 && parts[0] === "r") {
       ref = parts[1];
     }
   }
 
-  // ref 자체를 못 얻으면 바로 에러 화면
+  // ref 자체를 못 얻으면 디버그 화면
   if (!ref) {
     return (
       <main
@@ -74,7 +76,6 @@ export default async function RedirectPage({ params }: PageProps) {
             {JSON.stringify(
               {
                 params,
-                parsedRef: ref,
               },
               null,
               2
@@ -85,14 +86,14 @@ export default async function RedirectPage({ params }: PageProps) {
     );
   }
 
-  // ref_code로 해당 share 찾기
+  // ref_code로 share 찾기
   const { data: share, error } = await supabase
     .from("r3_shares")
     .select("id, target_url, ref_code")
     .eq("ref_code", ref)
     .maybeSingle();
 
-  // 못 찾았거나 에러이면 안내 화면
+  // 못 찾았거나 에러이면 안내 + 디버그 출력
   if (!share || error || !share.target_url) {
     return (
       <main
