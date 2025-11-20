@@ -8,9 +8,9 @@ export const dynamic = "force-dynamic";
 
 export default async function RedirectPage() {
   const supabase = supabaseServer();
-  const h = headers();
 
-  // 🔹 미들웨어에서 넣어 준 ref 코드
+  // 🔹 미들웨어에서 넣어 준 ref 코드 읽기
+  const h = await headers(); // ← 여기서 Promise를 실제 헤더 객체로 받음
   const ref = h.get("x-r3-ref");
 
   // ref가 없으면 디버그 화면
@@ -36,7 +36,9 @@ export default async function RedirectPage() {
             fontFamily: "monospace",
           }}
         >
-          <h1 style={{ fontSize: 20, marginBottom: 8 }}>DEBUG: no ref from header</h1>
+          <h1 style={{ fontSize: 20, marginBottom: 8 }}>
+            DEBUG: no ref from header
+          </h1>
           <pre
             style={{
               fontSize: 12,
