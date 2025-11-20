@@ -7,7 +7,6 @@ export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: {
-    // /r/RCgm2oo -> params.ref === "RCgm2oo"
     ref: string;
   };
 };
@@ -15,14 +14,12 @@ type PageProps = {
 export default async function RedirectPage({ params }: PageProps) {
   const supabase = supabaseServer();
 
-  // ref_code 컬럼으로 해당 share 찾기
   const { data: share, error } = await supabase
     .from("r3_shares")
     .select("id, target_url")
     .eq("ref_code", params.ref)
     .maybeSingle();
 
-  // 못 찾았거나 에러이면 "링크를 찾을 수 없습니다" 화면
   if (!share || error || !share.target_url) {
     return (
       <main
@@ -43,3 +40,18 @@ export default async function RedirectPage({ params }: PageProps) {
             textAlign: "center",
           }}
         >
+          <h1 style={{ fontSize: "24px", fontWeight: 700, marginBottom: "8px" }}>
+            링크를 찾을 수 없습니다
+          </h1>
+          <p style={{ fontSize: "14px", color: "#64748b" }}>
+            잘못된 링크이거나, 삭제된 링크일 수 있습니다.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  await supabase.from("r3_hits").insert({ share_id: share.id });
+
+  redirect(share.target_url);
+}
