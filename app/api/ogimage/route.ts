@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { supabaseServer } from "../../../lib/supabaseServer";
+import React from "react";
 
 export const runtime = "edge";
 
@@ -25,74 +26,82 @@ export async function GET(req: Request) {
 
   const { title, views, hop, thumbnail_url } = shareData;
 
-  // 🔹 OG 이미지 렌더링
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "1200px",
-          height: "630px",
-          display: "flex",
-          flexDirection: "column",
-          backgroundColor: "#0b172a",
-          fontFamily: "Pretendard, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-          position: "relative",
-        }}
-      >
-        {/* ▶ 상단 라벨은 모바일에서 너무 커서 제거 */}
-
-        {/* ▶ 제목 (조금 더 작게: 34px) */}
-        <div
-          style={{
-            fontSize: "34px",
-            fontWeight: 600,
-            color: "white",
-            paddingTop: "50px",
-            paddingLeft: "70px",
-          }}
-        >
-          {title}
-        </div>
-
-        {/* ▶ 원본 썸네일 */}
-        <img
-          src={thumbnail_url}
-          style={{
-            width: "1060px",
-            height: "420px",
-            margin: "40px auto 0 auto",
-            objectFit: "cover",
-            borderRadius: "24px",
-          }}
-        />
-
-        {/* ▶ 아래 R3 박스 (폰트 크게 + 고대비, 모바일에서 잘 보이도록) */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "40px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            display: "flex",
-            alignItems: "center",
-            gap: "40px",                 // 아이템 사이 간격
-            padding: "16px 40px",        // 박스 크기 키우기
-            background: "rgba(0, 0, 0, 0.45)", // 배경을 조금 더 진하게
-            borderRadius: "40px",
-            fontSize: "30px",            // 🔥 핵심: 글자 크게
-            fontWeight: 800,             // 🔥 더 두껍게
-            color: "white",
-          }}
-        >
-          <span style={{ color: "#4aa8ff" }}>R3</span>
-          <span>Views {views}</span>
-          <span>Hop {hop}</span>
-        </div>
-      </div>
-    ),
+  // 🔹 React.createElement로 OG 이미지 구성 (JSX 사용 안 함)
+  const element = React.createElement(
+    "div",
     {
-      width: 1200,
-      height: 630,
-    }
+      style: {
+        width: "1200px",
+        height: "630px",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: "#0b172a",
+        fontFamily:
+          "Pretendard, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        position: "relative",
+      },
+    },
+    // ▶ 상단 라벨 제거
+
+    // ▶ 제목
+    React.createElement(
+      "div",
+      {
+        style: {
+          fontSize: "34px",
+          fontWeight: 600,
+          color: "white",
+          paddingTop: "50px",
+          paddingLeft: "70px",
+        },
+      },
+      title
+    ),
+
+    // ▶ 원본 썸네일
+    React.createElement("img", {
+      src: thumbnail_url,
+      style: {
+        width: "1060px",
+        height: "420px",
+        margin: "40px auto 0 auto",
+        objectFit: "cover",
+        borderRadius: "24px",
+      },
+    }),
+
+    // ▶ 아래 R3 박스 (폰트 크게 + 고대비)
+    React.createElement(
+      "div",
+      {
+        style: {
+          position: "absolute",
+          bottom: "40px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          display: "flex",
+          alignItems: "center",
+          gap: "40px",
+          padding: "16px 40px",
+          background: "rgba(0, 0, 0, 0.45)",
+          borderRadius: "40px",
+          fontSize: "30px", // 🔥 크게
+          fontWeight: 800,   // 🔥 두껍게
+          color: "white",
+        },
+      },
+      React.createElement(
+        "span",
+        { style: { color: "#4aa8ff" } },
+        "R3"
+      ),
+      React.createElement("span", null, "Views " + views),
+      React.createElement("span", null, "Hop " + hop)
+    )
   );
+
+  return new ImageResponse(element, {
+    width: 1200,
+    height: 630,
+  });
 }
