@@ -1,43 +1,37 @@
 import { ImageResponse } from "next/og";
+import { NextRequest } from "next/server";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
 export const runtime = "edge";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const shareId = searchParams.get("shareId");
 
   if (!shareId) {
-    return new Response("Missing shareId", { status: 400 });
+    return new Response("Invalid shareId", { status: 400 });
   }
 
+  // Supabase 연결
   const supabase = supabaseServer();
-
-  const { data: shareData, error } = await supabase
+  const { data, error } = await supabase
     .from("r3_shares")
     .select("title, views, hop, thumbnail_url")
     .eq("ref_code", shareId)
-    .maybeSingle(); // row가 없으면 null, 있으면 1개
+    .maybeSingle();
 
-  // ✅ 1) Supabase 오류를 그대로 보여 주기 (진단용)
   if (error) {
-    return new Response(
-      `Supabase error: ${error.message}`,
-      { status: 500 }
-    );
+    return new Response(`Supabase error: ${error.message}`, { status: 500 });
+  }
+  if (!data) {
+    return new Response("Share not found", { status: 404 });
   }
 
-  // ✅ 2) 행이 없는 경우는 진짜로 shareId가 잘못된 경우
-  if (!shareData) {
-    return new Response(
-      `Invalid shareId: ${shareId}`,
-      { status: 404 }
-    );
-  }
+  const { title, views, hop, thumbnail_url } = data;
 
-  const { title, views, hop, thumbnail_url } = shareData;
+  // fallback: thumbnail_url이 없으면 null
+  const thumb = thumbnail_url ? thumbnail_url : null;
 
-  // ✅ 3) 썸네일 이미지 렌더링 (위쪽 텍스트 없이, 아래 R3/Views/Hop 크게)
   return new ImageResponse(
     (
       <div
@@ -49,48 +43,42 @@ export async function GET(req: Request) {
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "#0b172a",
-          fontFamily: "Pretendard, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+          fontFamily: "Pretendard, system-ui, sans-serif",
           position: "relative",
         }}
       >
-        {/* 원본 썸네일 */}
-        <img
-          src={thumbnail_url}
-          style={{
-            width: "1060px",
-            height: "420px",
-            objectFit: "cover",
-            borderRadius: "24px",
-          }}
-        />
 
-        {/* 하단 R3 · Views · Hop 박스 (폰트 크게) */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "40px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            display: "flex",
-            alignItems: "center",
-            gap: "40px",
-            padding: "16px 40px",
-            background: "rgba(0, 0, 0, 0.45)",
-            borderRadius: "40px",
-            fontSize: "30px",
-            fontWeight: 800,
-            color: "white",
-          }}
-        >
-          <span style={{ color: "#4aa8ff" }}>R3</span>
-          <span>Views {views}</span>
-          <span>Hop {hop}</span>
-        </div>
-      </div>
-    ),
-    {
-      width: 1200,
-      height: 630,
-    }
-  );
-}
+        {/* --- 🔵 1) 원본 썸네일 or fallback 박스 --- */}
+        {thumb ? (
+          // 원본 썸네일이 있는 경우
+          <img
+            src={thumb}
+            style={{
+              width: "1060px",
+              height: "420px",
+              objectFit: "cover",
+              borderRadius: "24px",
+            }}
+          />
+        ) : (
+          // thumbnail_url이 없을 때 표시할 fallback 박스
+          <div
+            style={{
+              width: "1060px",
+              height: "420px",
+              borderRadius: "24px",
+              background:
+                "radial-gradient(circle at top, #1f2a3f 0%, #050914 55%, #020308 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#8fa3c1",
+              fontSize: "36px",
+              fontWeight: 700,
+            }}
+          >
+            R3 HAND-FORWARDED LINK
+          </div>
+        )}
+
+        {/* --- 🟠 2) 하단 오버레이 박스 (폰트 크게) ---*
