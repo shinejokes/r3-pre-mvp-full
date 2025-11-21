@@ -7,31 +7,21 @@ import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
-type PageParams = {
-  params: {
-    code: string[]; // /r/RCgm2oo -> ["RCgm2oo"]
-  };
-};
-
-// URL에서 ref 코드 추출
-function getRefFromParams(params: PageParams["params"]): string | null {
-  if (!params?.code) return null;
-  if (Array.isArray(params.code)) {
-    return params.code[0] ?? null;
-  }
-  return params.code;
+// 공통: 헤더에서 ref 코드 가져오기
+async function getRefFromHeader(): Promise<string | null> {
+  const h = await headers();
+  const ref = h.get("x-r3-ref");
+  return ref;
 }
 
 // =====================
 //  메타데이터 (OG 이미지)
 // =====================
-export async function generateMetadata({
-  params,
-}: PageParams): Promise<Metadata> {
-  const ref = getRefFromParams(params);
-
+export async function generateMetadata(): Promise<Metadata> {
   const baseUrl =
     process.env.R3_APP_BASE_URL ?? "https://r3-pre-mvp-full.vercel.app";
+
+  const ref = await getRefFromHeader();
 
   if (!ref) {
     return {
@@ -66,12 +56,18 @@ export async function generateMetadata({
 // =====================
 //  실제 페이지 (리다이렉트)
 // =====================
-export default async function RedirectPage({ params }: PageParams) {
-  const ref = getRefFromParams(params);
+export default async function RedirectPage() {
   const supabase = supabaseServer();
   const h = await headers();
+  const ref = h.get("x-r3-ref");
 
+  // ref가 없으면 디버그 화면 (헤더 전체 출력)
   if (!ref) {
+    const allHeaders: Record<string, string> = {};
+    h.forEach((value, key) => {
+      allHeaders[key] = value;
+    });
+
     return (
       <main
         style={{
@@ -94,7 +90,7 @@ export default async function RedirectPage({ params }: PageParams) {
           }}
         >
           <h1 style={{ fontSize: 20, marginBottom: 8 }}>
-            DEBUG: no ref from URL
+            DEBUG: no ref from header
           </h1>
           <pre
             style={{
@@ -109,20 +105,14 @@ export default async function RedirectPage({ params }: PageParams) {
               overflow: "auto",
             }}
           >
-            {JSON.stringify(
-              {
-                params,
-              },
-              null,
-              2
-            )}
+            {JSON.stringify(allHeaders, null, 2)}
           </pre>
         </div>
       </main>
     );
   }
 
-  // ref_code로 share 찾기
+  // ref_code 로 share 찾기
   const { data: share, error } = await supabase
     .from("r3_shares")
     .select("id, title, target_url")
@@ -193,7 +183,7 @@ export default async function RedirectPage({ params }: PageParams) {
   // 조회수 증가
   await supabase.from("r3_hits").insert({ share_id: share.id });
 
-  // User-Agent로 봇 판단
+  // User-Agent로 봇/사람 구분
   const ua = (h.get("user-agent") || "").toLowerCase();
   const isBot = /bot|crawl|spider|facebookexternalhit|kakaotalk|kakaolink|kakaolinkscrap|slackbot|telegrambot/.test(
     ua
@@ -204,7 +194,7 @@ export default async function RedirectPage({ params }: PageParams) {
     redirect(share.target_url);
   }
 
-  // 봇/스크래퍼 → 여기 머물면서 메타태그 사용
+  // 봇/스크래퍼 → 여기 머무르며 메타태그 사용
   return (
     <main
       style={{
