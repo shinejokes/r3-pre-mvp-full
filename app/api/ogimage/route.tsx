@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     return new Response("Invalid shareId", { status: 400 });
   }
 
-  // Supabase 연결
+  // Supabase에서 공유 정보 가져오기
   const supabase = supabaseServer();
   const { data, error } = await supabase
     .from("r3_shares")
@@ -28,9 +28,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { title, views, hop, thumbnail_url } = data;
-
-  // fallback: thumbnail_url이 없으면 null
-  const thumb = thumbnail_url ? thumbnail_url : null;
+  const thumb = thumbnail_url || null;
 
   return new ImageResponse(
     (
@@ -47,10 +45,8 @@ export async function GET(req: NextRequest) {
           position: "relative",
         }}
       >
-
-        {/* --- 🔵 1) 원본 썸네일 or fallback 박스 --- */}
+        {/* 1) 원본 썸네일 또는 대체 박스 */}
         {thumb ? (
-          // 원본 썸네일이 있는 경우
           <img
             src={thumb}
             style={{
@@ -61,7 +57,6 @@ export async function GET(req: NextRequest) {
             }}
           />
         ) : (
-          // thumbnail_url이 없을 때 표시할 fallback 박스
           <div
             style={{
               width: "1060px",
@@ -81,4 +76,33 @@ export async function GET(req: NextRequest) {
           </div>
         )}
 
-        {/* --- 🟠 2) 하단 오버레이 박스 (폰트 크게) ---*
+        {/* 2) 하단 오버레이 박스 (폰트 크게) */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "40px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            alignItems: "center",
+            gap: "40px",
+            padding: "18px 44px",
+            background: "rgba(0, 0, 0, 0.45)",
+            borderRadius: "40px",
+            fontSize: "34px",
+            fontWeight: 800,
+            color: "white",
+          }}
+        >
+          <span style={{ color: "#4aa8ff" }}>R3</span>
+          <span>Views {views ?? 0}</span>
+          <span>Hop {hop ?? 1}</span>
+        </div>
+      </div>
+    ),
+    {
+      width: 1200,
+      height: 630,
+    }
+  );
+}
