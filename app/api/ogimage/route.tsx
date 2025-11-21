@@ -23,7 +23,6 @@ export async function GET(req: Request) {
     return new Response("Invalid shareId", { status: 404 });
   }
 
-  // title은 당분간 이미지에 표시하지 않지만, 우선은 그대로 받아 둠
   const { title, views, hop, thumbnail_url } = shareData;
 
   // 🔹 OG 이미지 렌더링
@@ -35,21 +34,33 @@ export async function GET(req: Request) {
           height: "630px",
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center", // ▶ 이미지+하단 박스를 중앙 정렬
           backgroundColor: "#0b172a",
           fontFamily: "Pretendard, sans-serif",
           position: "relative",
         }}
       >
-        {/* ▶ 위쪽의 모든 텍스트(라벨/제목)는 완전히 제거함 */}
+        {/* ▶ 상단 라벨 제거됨 */}
 
-        {/* ▶ 원본 썸네일만 중앙에 배치 */}
+        {/* ▶ 제목 (조금 더 작게: 34px) */}
+        <div
+          style={{
+            fontSize: "34px",
+            fontWeight: 600,
+            color: "white",
+            paddingTop: "50px",
+            paddingLeft: "70px",
+          }}
+        >
+          {title}
+        </div>
+
+        {/* ▶ 원본 썸네일 */}
         <img
           src={thumbnail_url}
           style={{
             width: "1060px",
             height: "420px",
+            margin: "40px auto 0 auto",
             objectFit: "cover",
             borderRadius: "24px",
           }}
@@ -68,8 +79,8 @@ export async function GET(req: Request) {
             padding: "16px 40px",
             background: "rgba(0, 0, 0, 0.45)",
             borderRadius: "40px",
-            fontSize: "30px", // ← 크게
-            fontWeight: 800,   // ← 두껍게
+            fontSize: "30px", // ← **가장 중요한 부분: 크게 증가**
+            fontWeight: 800,   // ← 굵게
             color: "white",
           }}
         >
