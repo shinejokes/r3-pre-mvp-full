@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
           },
           children: 'R3 · Missing shareId',
         },
-      },
+      } as any, // TS의 ReactElement 타입 요구 회피
       { width: 1200, height: 630 }
     )
   }
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
           },
           children: `R3 · Link Not Found (${shareId})`,
         },
-      },
+      } as any,
       { width: 1200, height: 630 }
     )
   }
@@ -279,7 +279,7 @@ export async function GET(req: NextRequest) {
           },
         },
       },
-    },
+    } as any,
     { width: 1200, height: 630 }
   )
 }
