@@ -77,27 +77,28 @@ export async function GET(req: NextRequest) {
         )}
 
         {/* 2) 하단 오버레이 박스 (폰트 크게) */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "40px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            display: "flex",
-            alignItems: "center",
-            gap: "40px",
-            padding: "18px 44px",
-            background: "rgba(0, 0, 0, 0.45)",
-            borderRadius: "40px",
-            fontSize: "34px",
-            fontWeight: 800,
-            color: "white",
-          }}
-        >
-          <span style={{ color: "#4aa8ff" }}>R3</span>
-          <span>Views {views ?? 0}</span>
-          <span>Hop {hop ?? 1}</span>
-        </div>
+       <div
+  style={{
+    position: "absolute",
+    left: 60,
+    bottom: 60,
+    padding: "28px 44px",
+    borderRadius: 999,
+    backgroundColor: "rgba(0,0,0,0.80)",   // 조금 더 진하게
+    display: "flex",
+    alignItems: "center",
+    gap: 60,               // 항목 간 넓게
+    fontSize: 60,          // 🔥 데모용 초대형 폰트
+    lineHeight: 1.1,
+    fontWeight: 700,
+    color: "#ffffff",
+  }}
+>
+  <span>R3</span>
+  <span>Views {views}</span>
+  <span>Hop {hop}</span>
+</div>
+
       </div>
     ),
     {
