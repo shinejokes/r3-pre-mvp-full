@@ -3,17 +3,66 @@
 import { supabaseServer } from "../../../lib/supabaseServer";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
-export default async function RedirectPage() {
-  const supabase = supabaseServer();
-
-  // 🔹 미들웨어에서 넣어 준 ref 코드 읽기
-  const h = await headers(); // ← 여기서 Promise를 실제 헤더 객체로 받음
+// 공통: 헤더에서 ref 읽고 Supabase에서 share 가져오는 헬퍼
+async function getShareFromHeader() {
+  const h = await headers();
   const ref = h.get("x-r3-ref");
 
-  // ref가 없으면 디버그 화면
+  if (!ref) {
+    return { ref: null as string | null, share: null as any };
+  }
+
+  const supabase = supabaseServer();
+  const { data: share } = await supabase
+    .from("r3_shares")
+    .select("id, title, target_url, hop")
+    .eq("ref_code", ref)
+    .maybeSingle();
+
+  return { ref, share: share ?? null };
+}
+
+// ✅ 카카오/페북 등에서 읽을 OG 메타데이터
+export async function generateMetadata(): Promise<Metadata> {
+  const { ref, share } = await getShareFromHeader();
+
+  const baseUrl =
+    process.env.R3_APP_BASE_URL ?? "https://r3-pre-mvp-full.vercel.app";
+
+  if (!ref || !share) {
+    return {
+      title: "R3 · Hand-Forwarded Link",
+    };
+  }
+
+  const title = share.title ?? "R3 · Hand-Forwarded Link";
+  const ogImage = `${baseUrl}/api/ogimage?shareId=${encodeURIComponent(ref)}`;
+
+  return {
+    title,
+    openGraph: {
+      title,
+      images: [ogImage],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      images: [ogImage],
+    },
+  };
+}
+
+// ✅ 실제 페이지: 사람에게는 redirect, 봇에게는 정적 안내
+export default async function RedirectPage() {
+  const supabase = supabaseServer();
+  const h = await headers();
+  const ref = h.get("x-r3-ref");
+
+  // ref 없으면 디버그 화면
   if (!ref) {
     return (
       <main
@@ -52,23 +101,23 @@ export default async function RedirectPage() {
               overflow: "auto",
             }}
           >
-{JSON.stringify(
-  {
-    "x-r3-ref": ref,
-  },
-  null,
-  2
-)}
+            {JSON.stringify(
+              {
+                "x-r3-ref": ref,
+              },
+              null,
+              2
+            )}
           </pre>
         </div>
       </main>
     );
   }
 
-  // 🔹 Supabase에서 ref_code로 share 찾기
+  // Supabase에서 ref_code로 share 찾기
   const { data: share, error } = await supabase
     .from("r3_shares")
-    .select("id, target_url")
+    .select("id, title, target_url")
     .eq("ref_code", ref)
     .maybeSingle();
 
@@ -118,24 +167,85 @@ export default async function RedirectPage() {
               textAlign: "left",
             }}
           >
-{JSON.stringify(
-  {
-    refTried: ref,
-    error,
-    share,
-  },
-  null,
-  2
-)}
+            {JSON.stringify(
+              {
+                refTried: ref,
+                error,
+                share,
+              },
+              null,
+              2
+            )}
           </pre>
         </div>
       </main>
     );
   }
 
-  // 🔹 찾았으면 hits 증가
+  // 조회수 증가
   await supabase.from("r3_hits").insert({ share_id: share.id });
 
-  // 🔹 그리고 원본으로 이동
-  redirect(share.target_url);
+  // User-Agent 확인해서 봇/스크래퍼면 redirect 하지 않음
+  const ua = (h.get("user-agent") || "").toLowerCase();
+  const isBot = /bot|crawl|spider|facebookexternalhit|kakaotalk|kakaolink|kakaolinkscrap|slackbot|telegrambot/.test(
+    ua
+  );
+
+  if (!isBot) {
+    // 일반 브라우저 → 기존처럼 바로 원본으로 이동
+    redirect(share.target_url);
+  }
+
+  // 봇/스크래퍼 → R3 안내 페이지 (메타 태그는 위 generateMetadata에서 이미 설정)
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background:
+          "radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%)",
+        color: "#e5e7eb",
+        fontFamily:
+          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      }}
+    >
+      <div
+        style={{
+          padding: "32px 40px",
+          borderRadius: 24,
+          backgroundColor: "rgba(15,23,42,0.9)",
+          boxShadow: "0 24px 60px rgba(15,23,42,0.9)",
+          textAlign: "center",
+          maxWidth: 640,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 14,
+            letterSpacing: 4,
+            textTransform: "uppercase",
+            color: "#38bdf8",
+            marginBottom: 10,
+          }}
+        >
+          R3 · Hand-Forwarded Link
+        </div>
+        <h1
+          style={{
+            fontSize: 26,
+            fontWeight: 700,
+            marginBottom: 12,
+          }}
+        >
+          원본 페이지로 연결 중입니다…
+        </h1>
+        <p style={{ fontSize: 14, color: "#94a3b8" }}>
+          잠시 후 원본 콘텐츠로 이동합니다. 사람 사용자는 자동으로,  
+          미리보기 봇은 이 페이지의 썸네일 정보를 사용합니다.
+        </p>
+      </div>
+    </main>
+  );
 }
