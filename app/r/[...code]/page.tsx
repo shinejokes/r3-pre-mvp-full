@@ -7,39 +7,46 @@ import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
-// 공통: 헤더에서 ref 읽고 Supabase에서 share 가져오는 헬퍼
-async function getShareFromHeader() {
-  const h = await headers();
-  const ref = h.get("x-r3-ref");
+type PageParams = {
+  params: {
+    code: string[]; // /r/RCgm2oo -> ["RCgm2oo"]
+  };
+};
 
-  if (!ref) {
-    return { ref: null as string | null, share: null as any };
+// URL에서 ref 코드 추출
+function getRefFromParams(params: PageParams["params"]): string | null {
+  if (!params?.code) return null;
+  if (Array.isArray(params.code)) {
+    return params.code[0] ?? null;
   }
-
-  const supabase = supabaseServer();
-  const { data: share } = await supabase
-    .from("r3_shares")
-    .select("id, title, target_url, hop")
-    .eq("ref_code", ref)
-    .maybeSingle();
-
-  return { ref, share: share ?? null };
+  return params.code;
 }
 
-// ✅ 카카오/페북 등에서 읽을 OG 메타데이터
-export async function generateMetadata(): Promise<Metadata> {
-  const { ref, share } = await getShareFromHeader();
+// =====================
+//  메타데이터 (OG 이미지)
+// =====================
+export async function generateMetadata({
+  params,
+}: PageParams): Promise<Metadata> {
+  const ref = getRefFromParams(params);
 
   const baseUrl =
     process.env.R3_APP_BASE_URL ?? "https://r3-pre-mvp-full.vercel.app";
 
-  if (!ref || !share) {
+  if (!ref) {
     return {
       title: "R3 · Hand-Forwarded Link",
     };
   }
 
-  const title = share.title ?? "R3 · Hand-Forwarded Link";
+  const supabase = supabaseServer();
+  const { data: share } = await supabase
+    .from("r3_shares")
+    .select("title")
+    .eq("ref_code", ref)
+    .maybeSingle();
+
+  const title = share?.title ?? "R3 · Hand-Forwarded Link";
   const ogImage = `${baseUrl}/api/ogimage?shareId=${encodeURIComponent(ref)}`;
 
   return {
@@ -56,13 +63,14 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-// ✅ 실제 페이지: 사람에게는 redirect, 봇에게는 정적 안내
-export default async function RedirectPage() {
+// =====================
+//  실제 페이지 (리다이렉트)
+// =====================
+export default async function RedirectPage({ params }: PageParams) {
+  const ref = getRefFromParams(params);
   const supabase = supabaseServer();
   const h = await headers();
-  const ref = h.get("x-r3-ref");
 
-  // ref 없으면 디버그 화면
   if (!ref) {
     return (
       <main
@@ -86,7 +94,7 @@ export default async function RedirectPage() {
           }}
         >
           <h1 style={{ fontSize: 20, marginBottom: 8 }}>
-            DEBUG: no ref from header
+            DEBUG: no ref from URL
           </h1>
           <pre
             style={{
@@ -103,7 +111,7 @@ export default async function RedirectPage() {
           >
             {JSON.stringify(
               {
-                "x-r3-ref": ref,
+                params,
               },
               null,
               2
@@ -114,7 +122,7 @@ export default async function RedirectPage() {
     );
   }
 
-  // Supabase에서 ref_code로 share 찾기
+  // ref_code로 share 찾기
   const { data: share, error } = await supabase
     .from("r3_shares")
     .select("id, title, target_url")
@@ -185,18 +193,18 @@ export default async function RedirectPage() {
   // 조회수 증가
   await supabase.from("r3_hits").insert({ share_id: share.id });
 
-  // User-Agent 확인해서 봇/스크래퍼면 redirect 하지 않음
+  // User-Agent로 봇 판단
   const ua = (h.get("user-agent") || "").toLowerCase();
   const isBot = /bot|crawl|spider|facebookexternalhit|kakaotalk|kakaolink|kakaolinkscrap|slackbot|telegrambot/.test(
     ua
   );
 
   if (!isBot) {
-    // 일반 브라우저 → 기존처럼 바로 원본으로 이동
+    // 사람 → 바로 원본으로 이동
     redirect(share.target_url);
   }
 
-  // 봇/스크래퍼 → R3 안내 페이지 (메타 태그는 위 generateMetadata에서 이미 설정)
+  // 봇/스크래퍼 → 여기 머물면서 메타태그 사용
   return (
     <main
       style={{
