@@ -137,15 +137,16 @@ export async function GET(req: NextRequest) {
           </div>
         </div>
 
-        {/* 2) 하단 오버레이 박스 (폰트 크게) */}
+             {/* 2) 하단 오버레이 박스 (폰트 크게, 오른쪽 아래 + 흰 테두리) */}
         <div
           style={{
             position: "absolute",
-            left: 60,
+            right: 60,              // ✅ 왼쪽 → 오른쪽 정렬
             bottom: 60,
             padding: "28px 44px",
             borderRadius: 999,
             backgroundColor: "rgba(0,0,0,0.80)",
+            border: "4px solid #ffffff", // ✅ 흰 테두리 추가
             display: "flex",
             alignItems: "center",
             gap: 60,
@@ -159,6 +160,7 @@ export async function GET(req: NextRequest) {
           <span>Views {views}</span>
           <span>Hop {hop}</span>
         </div>
+
       </div>
     ),
     {
