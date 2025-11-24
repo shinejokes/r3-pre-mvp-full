@@ -14,74 +14,116 @@ function generateRefCode(length = 7) {
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const { title, url } = await req.json();
+  const supabase = supabaseServer();
 
-    if (!title || !url) {
+  try {
+    const body = await req.json();
+
+    const {
+      originalUrl,
+      title,
+      targetUrl,
+      parentRefCode,
+    }: {
+      originalUrl?: string;
+      title?: string;
+      targetUrl?: string;
+      parentRefCode?: string; // 중간 등록자의 부모 링크 ref_code
+    } = body || {};
+
+    if (!originalUrl) {
       return NextResponse.json(
-        { error: "title과 url은 필수입니다." },
+        { error: "originalUrl이 필요합니다." },
         { status: 400 }
       );
     }
 
-    const supabase = supabaseServer();
-
-    // 1) r3_messages에 메시지 저장
+    // 1) 메시지 생성 (원본 콘텐츠 단위)
     const { data: message, error: messageError } = await supabase
       .from("r3_messages")
       .insert({
-        title,
-        origin_url: url,
-        url,
+        original_url: originalUrl,
+        title: title ?? null,
+        target_url: targetUrl ?? originalUrl,
       })
-      .select()
+      .select("id, uuid")
       .single();
 
     if (messageError || !message) {
-      console.error("message insert error:", messageError);
+      console.error("insert r3_messages error:", messageError);
       return NextResponse.json(
-        { error: "메시지 저장 중 오류 발생", detail: messageError },
+        { error: "메시지 생성에 실패했습니다." },
         { status: 500 }
       );
     }
 
-    // 2) r3_shares에 hop=1 share 생성
-    //    🔸 여기서 꼭 message_id 컬럼에 message.uuid 를 넣어야 함!
-    const refCode = generateRefCode();
+    // 2) hop 계산 (부모 ref_code가 있으면 hop = 부모 + 1, 아니면 1)
+    let hop = 1;
+    let parentShareId: number | null = null;
+
+    if (parentRefCode) {
+      const { data: parentShare, error: parentError } = await supabase
+        .from("r3_shares")
+        .select("id, hop")
+        .eq("ref_code", parentRefCode)
+        .maybeSingle();
+
+      if (parentError || !parentShare) {
+        console.error("parent share not found:", parentError);
+        return NextResponse.json(
+          { error: "부모 공유 링크를 찾을 수 없습니다." },
+          { status: 400 }
+        );
+      }
+
+      parentShareId = parentShare.id;
+      hop = (parentShare.hop ?? 0) + 1;
+    }
+
+    // 3) 새로운 share(공유 링크) 생성
+    const refCode = generateRefCode(7);
+
     const { data: share, error: shareError } = await supabase
       .from("r3_shares")
       .insert({
-        message_id: message.uuid,      // ★ 핵심 수정
+        message_id: message.id,
         ref_code: refCode,
-        hop: 1,
-        original_url: message.origin_url,
-        title: message.title,
-        target_url: message.url,
+        title: title ?? null,
+        original_url: originalUrl,
+        target_url: targetUrl ?? originalUrl,
+        parent_share_id: parentShareId,
+        hop,
+        views: 0, // 새로 생성될 때 조회수 0에서 시작
       })
-      .select()
+      .select("id, hop, ref_code")
       .single();
 
     if (shareError || !share) {
-      console.error("share insert error:", shareError);
+      console.error("insert r3_shares error:", shareError);
       return NextResponse.json(
-        { error: "share 생성 중 오류 발생", detail: shareError },
+        { error: "공유 링크 생성에 실패했습니다." },
         { status: 500 }
       );
     }
 
-    // 3) 공유 링크 URL 생성
-    const origin = req.nextUrl.origin; // 예: https://r3-pre-mvp-full.vercel.app
-    const shareUrl = `${origin}/r/${share.ref_code}`;
+    // 4) 클라이언트에 돌려줄 URL 구성
+    const baseUrl =
+      process.env.R3_APP_BASE_URL || "https://r3-pre-mvp-full.vercel.app";
 
-    // 4) 프론트로 JSON 응답
-    return NextResponse.json({
-      ok: true,
-      shareUrl,
-      messageId: message.id,
-      messageUuid: message.uuid,
-      shareId: share.id,
-      hop: share.hop,
-    });
+    const shareUrl = `${baseUrl}/r/${share.ref_code}`;
+
+    return NextResponse.json(
+      {
+        ok: true,
+        shareUrl,
+        refCode: share.ref_code,
+        messageId: message.id,
+        messageUuid: message.uuid,
+        shareId: share.id,
+        hop: share.hop,
+      },
+      { status: 200 }
+    );
   } catch (e: any) {
     console.error("messages API fatal error:", e);
     return NextResponse.json(
