@@ -294,22 +294,47 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
             </div>
           )}
 
-          {myLink && (
-            <div
-              style={{
-                marginTop: 4,
-                borderRadius: 10,
-                border: "1px solid rgba(75,85,99,0.9)",
-                padding: "8px 10px",
-                fontSize: 13,
-                backgroundColor: "rgba(15,23,42,0.9)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 8,
-              }}
-            >
-              <div
-                style={{
-                  overflow: "hidden",
-                  textOverflo
+{myLink && (
+  <div
+    style={{
+      marginTop: 4,
+      borderRadius: 10,
+      border: "1px solid rgba(75,85,99,0.9)",
+      padding: "8px 10px",
+      fontSize: 13,
+      backgroundColor: "rgba(15,23,42,0.9)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 8,
+    }}
+  >
+    <div
+      style={{
+        overflow: "hidden",
+        textOverflow: "ellipsis",   // 🔹 여기!
+        whiteSpace: "nowrap",
+        marginRight: 8,
+      }}
+    >
+      {myLink}
+    </div>
+    <button
+      type="button"
+      onClick={handleCopy}
+      style={{
+        borderRadius: 999,
+        border: "1px solid rgba(148,163,184,0.9)",
+        padding: "4px 10px",
+        fontSize: 12,
+        backgroundColor: "transparent",
+        color: "#e5e7eb",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {copied ? "복사됨" : "복사"}
+    </button>
+  </div>
+)}
+
