@@ -57,7 +57,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
     setError(null);
     setCopied(false);
 
-    try:
+    try {
       const body = {
         originalUrl: share.original_url || share.target_url || "",
         title: share.title,
@@ -260,10 +260,9 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
                 padding: "8px 16px",
                 fontSize: 14,
                 fontWeight: 600,
-                background:
-                  creating
-                    ? "rgba(37,99,235,0.4)"
-                    : "linear-gradient(135deg,#2563eb,#0ea5e9)",
+                background: creating
+                  ? "rgba(37,99,235,0.4)"
+                  : "linear-gradient(135deg,#2563eb,#0ea5e9)",
                 color: "#f9fafb",
                 cursor: creating ? "default" : "pointer",
               }}
@@ -313,33 +312,4 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
               <div
                 style={{
                   overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  marginRight: 8,
-                }}
-              >
-                {myLink}
-              </div>
-              <button
-                type="button"
-                onClick={handleCopy}
-                style={{
-                  borderRadius: 999,
-                  border: "1px solid rgba(148,163,184,0.9)",
-                  padding: "4px 10px",
-                  fontSize: 12,
-                  backgroundColor: "transparent",
-                  color: "#e5e7eb",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {copied ? "복사됨" : "복사"}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+                  textOverflo
