@@ -1,87 +1,344 @@
-// app/r/[code]/redirect-screen.tsx
+// app/r/[...code]/redirect-screen.tsx
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 type ShareRow = {
   ref_code: string;
   title: string | null;
-  target_url: string | null;
   original_url: string | null;
+  target_url: string | null;
   views: number | null;
   hop: number | null;
 };
 
-export default function RedirectScreen({ share }: { share: ShareRow }) {
+interface RedirectScreenProps {
+  share: ShareRow;
+}
+
+interface CreateLinkResponse {
+  ok: boolean;
+  shareUrl: string;
+  refCode: string;
+  hop: number;
+  error?: string;
+}
+
+export default function RedirectScreen({ share }: RedirectScreenProps) {
+  const [countdown, setCountdown] = useState(3);
+  const [redirected, setRedirected] = useState(false);
+
+  const [creating, setCreating] = useState(false);
+  const [myLink, setMyLink] = useState<string | null>(null);
+  const [myHop, setMyHop] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const safeTitle = share.title || "R3 Hand-Forwarded Link";
+  const currentViews = share.views ?? 0;
+  const currentHop = share.hop ?? 1;
+  const targetUrl = share.target_url || share.original_url || "";
+
+  // 자동 리다이렉트
   useEffect(() => {
-    const go = async () => {
-      try {
-        // 1) 조회수 +1
-        await fetch("/api/view", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ref_code: share.ref_code }),
-        });
-      } catch (e) {
-        console.error("Failed to send view event", e);
+    if (!targetUrl || redirected) return;
+    if (countdown <= 0) {
+      setRedirected(true);
+      window.location.href = targetUrl;
+      return;
+    }
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown, targetUrl, redirected]);
+
+  // “내 링크 만들기” – 새 ref_code, hop+1 생성
+  async function handleCreateMyLink() {
+    setCreating(true);
+    setError(null);
+    setCopied(false);
+
+    try:
+      const body = {
+        originalUrl: share.original_url || share.target_url || "",
+        title: share.title,
+        targetUrl: share.target_url || share.original_url || "",
+        parentRefCode: share.ref_code, // 🔑 부모 share 기준 hop+1
+      };
+
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data: CreateLinkResponse = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "링크 생성에 실패했습니다.");
       }
 
-      // 2) 원본/타겟 URL로 이동
-      const dest = share.target_url || share.original_url;
-      if (dest) {
-        window.location.href = dest;
-      }
-    };
+      setMyLink(data.shareUrl);
+      setMyHop(data.hop);
+    } catch (e: any) {
+      setError(e?.message ?? "알 수 없는 오류가 발생했습니다.");
+    } finally {
+      setCreating(false);
+    }
+  }
 
-    // 살짝 딜레이를 줘도 되고, 바로 실행해도 됨
-    const timer = setTimeout(go, 400);
-    return () => clearTimeout(timer);
-  }, [share.ref_code, share.target_url, share.original_url]);
+  async function handleCopy() {
+    if (!myLink) return;
+    try {
+      await navigator.clipboard.writeText(myLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  }
 
-  // 사용자에게 보이는 대기 화면 (지금 보이던 문구 그대로 써도 됨)
   return (
     <div
       style={{
-        height: "100vh",
-        background:
-          "radial-gradient(circle at top, #1f2937 0%, #020617 55%, #000 100%)",
+        margin: 0,
+        minHeight: "100vh",
+        backgroundColor: "#020617",
+        color: "#e5e7eb",
+        fontFamily: "system-ui, sans-serif",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "#e5e7eb",
-        fontFamily: "system-ui, sans-serif",
-        padding: "0 24px",
-        textAlign: "center",
+        padding: "24px",
       }}
     >
       <div
         style={{
-          maxWidth: 480,
-          padding: "32px 24px",
+          maxWidth: 720,
+          width: "100%",
           borderRadius: 24,
-          backgroundColor: "rgba(15,23,42,0.92)",
-          boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
+          border: "1px solid rgba(148,163,184,0.6)",
+          padding: "28px 28px 24px 28px",
+          background:
+            "radial-gradient(circle at top left, #1d2837 0, #020617 55%)",
+          boxShadow: "0 18px 40px rgba(0,0,0,0.4)",
         }}
       >
+        {/* 상단: 제목 */}
+        <div style={{ marginBottom: 20 }}>
+          <div
+            style={{
+              fontSize: 14,
+              letterSpacing: 4,
+              textTransform: "uppercase",
+              color: "#9ca3af",
+              marginBottom: 6,
+            }}
+          >
+            R3 · HAND-FORWARDED LINK
+          </div>
+          <div
+            style={{
+              fontSize: 24,
+              fontWeight: 700,
+              lineHeight: 1.3,
+            }}
+          >
+            {safeTitle}
+          </div>
+        </div>
+
+        {/* 중단: 현재 Views / Hop + 리다이렉트 안내 */}
         <div
           style={{
-            fontSize: 20,
-            letterSpacing: 6,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
             marginBottom: 24,
-            color: "#9ca3af",
           }}
         >
-          R3 HAND-FORWARDED LINK
+          <div
+            style={{
+              display: "flex",
+              gap: 24,
+              alignItems: "center",
+              justifyContent: "flex-start",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#9ca3af",
+                  marginBottom: 4,
+                }}
+              >
+                현재 Views
+              </div>
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 800,
+                }}
+              >
+                {currentViews}
+              </div>
+            </div>
+            <div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#9ca3af",
+                  marginBottom: 4,
+                }}
+              >
+                Hop
+              </div>
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 800,
+                }}
+              >
+                {currentHop}
+              </div>
+            </div>
+          </div>
+
+          {targetUrl && (
+            <div
+              style={{
+                fontSize: 14,
+                color: "#d1d5db",
+              }}
+            >
+              잠시 후 원본 페이지로 이동합니다…{" "}
+              <span style={{ fontWeight: 600 }}>
+                {countdown > 0 ? `${countdown}초 후` : "이동 중"}
+              </span>
+            </div>
+          )}
         </div>
-        <h1 style={{ fontSize: 24, margin: 0, marginBottom: 16 }}>
-          원본 페이지로 연결 중입니다…
-        </h1>
-        <p style={{ fontSize: 15, lineHeight: 1.5, marginBottom: 8 }}>
-          잠시 후 원본 컨텐츠로 이동합니다. 새 창에서 열릴 수도 있습니다.
-        </p>
-        <p style={{ fontSize: 13, color: "#9ca3af" }}>
-          만약 자동으로 이동하지 않으면, 브라우저의 뒤로 가기를 눌러주세요.
-        </p>
+
+        {/* “내 링크 만들기” 영역 */}
+        <div
+          style={{
+            borderTop: "1px solid rgba(55,65,81,0.8)",
+            paddingTop: 16,
+            marginTop: 4,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 14,
+              color: "#9ca3af",
+              marginBottom: 8,
+            }}
+          >
+            이 링크가 마음에 들면,{" "}
+            <span style={{ color: "#e5e7eb", fontWeight: 600 }}>
+              내 R3 링크
+            </span>
+            를 만들어 친구들에게 직접 전달해 보세요.
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 12,
+              alignItems: "center",
+              marginBottom: 10,
+            }}
+          >
+            <button
+              type="button"
+              onClick={handleCreateMyLink}
+              disabled={creating}
+              style={{
+                borderRadius: 999,
+                border: "1px solid rgba(59,130,246,0.9)",
+                padding: "8px 16px",
+                fontSize: 14,
+                fontWeight: 600,
+                background:
+                  creating
+                    ? "rgba(37,99,235,0.4)"
+                    : "linear-gradient(135deg,#2563eb,#0ea5e9)",
+                color: "#f9fafb",
+                cursor: creating ? "default" : "pointer",
+              }}
+            >
+              {creating ? "내 링크 만드는 중…" : "내 링크 만들기 (Hop + 1)"}
+            </button>
+
+            {myHop !== null && (
+              <span
+                style={{
+                  fontSize: 13,
+                  color: "#a5b4fc",
+                }}
+              >
+                새 링크 Hop: {myHop}
+              </span>
+            )}
+          </div>
+
+          {error && (
+            <div
+              style={{
+                fontSize: 13,
+                color: "#fecaca",
+                marginBottom: 8,
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          {myLink && (
+            <div
+              style={{
+                marginTop: 4,
+                borderRadius: 10,
+                border: "1px solid rgba(75,85,99,0.9)",
+                padding: "8px 10px",
+                fontSize: 13,
+                backgroundColor: "rgba(15,23,42,0.9)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  marginRight: 8,
+                }}
+              >
+                {myLink}
+              </div>
+              <button
+                type="button"
+                onClick={handleCopy}
+                style={{
+                  borderRadius: 999,
+                  border: "1px solid rgba(148,163,184,0.9)",
+                  padding: "4px 10px",
+                  fontSize: 12,
+                  backgroundColor: "transparent",
+                  color: "#e5e7eb",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {copied ? "복사됨" : "복사"}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
