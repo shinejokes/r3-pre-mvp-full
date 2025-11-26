@@ -1,7 +1,7 @@
 // app/r/[...code]/redirect-screen.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type ShareRow = {
   ref_code: string;
@@ -25,11 +25,8 @@ interface CreateLinkResponse {
 }
 
 export default function RedirectScreen({ share }: RedirectScreenProps) {
-  const [countdown, setCountdown] = useState(3);
-  const [redirected, setRedirected] = useState(false);
-
   const [creating, setCreating] = useState(false);
-  const [created, setCreated] = useState(false); // ✅ 내 링크 생성 완료 여부
+  const [created, setCreated] = useState(false);
   const [myLink, setMyLink] = useState<string | null>(null);
   const [myHop, setMyHop] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,18 +36,6 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
   const currentViews = share.views ?? 0;
   const currentHop = share.hop ?? 1;
   const targetUrl = share.target_url || share.original_url || "";
-
-  // 자동 리다이렉트 (내 링크를 이미 만들었다면 멈춤)
-  useEffect(() => {
-    if (!targetUrl || redirected || created) return;
-    if (countdown <= 0) {
-      setRedirected(true);
-      window.location.href = targetUrl;
-      return;
-    }
-    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [countdown, targetUrl, redirected, created]);
 
   // “내 링크 만들기” – 새 ref_code, hop+1 생성
   async function handleCreateMyLink() {
@@ -80,8 +65,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
 
       setMyLink(data.shareUrl);
       setMyHop(data.hop);
-      setCreated(true);     // ✅ 자동 리다이렉트 중지
-      setRedirected(true);  // useEffect에서 더 이상 이동하지 않도록
+      setCreated(true); // ✅ 생성 완료 상태
     } catch (e: any) {
       setError(e?.message ?? "알 수 없는 오류가 발생했습니다.");
     } finally {
@@ -150,7 +134,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           </div>
         </div>
 
-        {/* 중단: 현재 Views / Hop + 리다이렉트 안내 */}
+        {/* 중단: 현재 Views / Hop */}
         <div
           style={{
             display: "flex",
@@ -207,17 +191,16 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
             </div>
           </div>
 
-          {!created && targetUrl && (
+          {!created && (
             <div
               style={{
                 fontSize: 14,
                 color: "#d1d5db",
               }}
             >
-              잠시 후 원본 페이지로 이동합니다…{" "}
-              <span style={{ fontWeight: 600 }}>
-                {countdown > 0 ? `${countdown}초 후` : "이동 중"}
-              </span>
+              이 링크는 <strong>R3 중간 전달 링크</strong>입니다.  
+              아래 버튼을 눌러 <strong>내 R3 링크</strong>를 만들고,
+              그 링크를 친구들에게 직접 전달해 보세요.
             </div>
           )}
 
@@ -246,20 +229,6 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         >
           {!created && (
             <>
-              <div
-                style={{
-                  fontSize: 14,
-                  color: "#9ca3af",
-                  marginBottom: 8,
-                }}
-              >
-                이 링크가 마음에 들면,{" "}
-                <span style={{ color: "#e5e7eb", fontWeight: 600 }}>
-                  내 R3 링크
-                </span>
-                를 만들어 친구들에게 직접 전달해 보세요.
-              </div>
-
               <ol
                 style={{
                   fontSize: 13,
@@ -269,10 +238,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
                 }}
               >
                 <li>아래 버튼을 눌러 내 링크를 만듭니다.</li>
-                <li>
-                  생성된 링크를 <strong>복사</strong>해서 카카오톡에 붙여
-                  넣습니다.
-                </li>
+                <li>생성된 링크를 <strong>복사</strong>해서 카카오톡에 붙여 넣습니다.</li>
               </ol>
             </>
           )}
@@ -379,7 +345,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
             </div>
           )}
 
-          {/* 원본으로 이동 버튼 (특히 created 상태에서 유용) */}
+          {/* 원본으로 이동 버튼 */}
           {targetUrl && (
             <div
               style={{
