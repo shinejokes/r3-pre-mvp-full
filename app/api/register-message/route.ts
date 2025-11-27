@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     //    - 컬럼이 original_url, title, note 라면 아래처럼.
  
    const { data, error } = await supabase
-  .from("r3-messages")  // 실제 테이블 이름
+  .from("r3_messages")  // 실제 테이블 이름
   .insert({
     origin_url: originalUrl,       // ★ 핵심 수정
     title: title ?? null,
