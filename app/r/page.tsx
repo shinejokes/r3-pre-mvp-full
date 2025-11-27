@@ -1,19 +1,17 @@
-// app/r/page.tsx
 "use client";
 
-import { useState } from "react";
+import React, { useState, FormEvent } from "react";
 
 export default function RegisterMessagePage() {
   const [title, setTitle] = useState("");
   const [originalUrl, setOriginalUrl] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // ✅ 새로 추가: 공유 링크 & 복사 완료 표시
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copyDone, setCopyDone] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     if (!originalUrl.trim()) {
       alert("원본 URL을 입력해 주세요.");
       return;
@@ -43,7 +41,7 @@ export default function RegisterMessagePage() {
         return;
       }
 
-      // ✅ 정상적으로 shareUrl을 받은 경우: 상태로 저장
+      // 성공: 공유 링크 상태에 저장
       setShareUrl(data.shareUrl);
       setCopyDone(false);
 
@@ -56,9 +54,9 @@ export default function RegisterMessagePage() {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function handleCopy() {
+  const handleCopy = async () => {
     if (!shareUrl) return;
 
     try {
@@ -66,14 +64,14 @@ export default function RegisterMessagePage() {
         await navigator.clipboard.writeText(shareUrl);
         setCopyDone(true);
       } else {
-        // 구형 브라우저 fallback
+        // 아주 구형 브라우저용
         window.prompt("아래 링크를 복사해 주세요.", shareUrl);
       }
     } catch (e) {
       console.error(e);
       alert("클립보드 복사에 실패했습니다. 직접 복사해 주세요.");
     }
-  }
+  };
 
   return (
     <div
@@ -127,7 +125,7 @@ export default function RegisterMessagePage() {
               width: "100%",
               padding: "10px 12px",
               borderRadius: "8px",
-              border: "1px solid #d1d5db",
+              border: "1px solid "#d1d5db",
               fontSize: "14px",
             }}
             placeholder="동영상이나 글의 제목을 적어 주세요"
@@ -152,7 +150,7 @@ export default function RegisterMessagePage() {
               width: "100%",
               padding: "10px 12px",
               borderRadius: "8px",
-              border: "1px solid #d1d5db",
+              border: "1px solid "#d1d5db",
               fontSize: "14px",
             }}
             placeholder="https:// 로 시작하는 원본 링크를 붙여 넣어 주세요"
@@ -177,7 +175,6 @@ export default function RegisterMessagePage() {
           {loading ? "등록 중..." : "메시지 등록하기"}
         </button>
 
-        {/* ✅ 등록 후에만 보이는 공유 링크 박스 */}
         {shareUrl && (
           <div
             style={{
@@ -220,3 +217,33 @@ export default function RegisterMessagePage() {
             </div>
             <button
               type="button"
+              onClick={handleCopy}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "999px",
+                border: "none",
+                backgroundColor: "#a66b1f",
+                color: "white",
+                fontSize: "13px",
+                cursor: "pointer",
+              }}
+            >
+              링크 복사
+            </button>
+            {copyDone && (
+              <span
+                style={{
+                  marginLeft: "8px",
+                  fontSize: "12px",
+                  color: "#666",
+                }}
+              >
+                복사되었습니다!
+              </span>
+            )}
+          </div>
+        )}
+      </form>
+    </div>
+  );
+}
