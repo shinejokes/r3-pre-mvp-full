@@ -41,7 +41,7 @@ export default function RegisterMessagePage() {
         return;
       }
 
-      // 성공: 공유 링크 상태에 저장
+      // 성공: 공유 링크 저장
       setShareUrl(data.shareUrl);
       setCopyDone(false);
 
@@ -64,7 +64,7 @@ export default function RegisterMessagePage() {
         await navigator.clipboard.writeText(shareUrl);
         setCopyDone(true);
       } else {
-        // 아주 구형 브라우저용
+        // 구형 브라우저 fallback
         window.prompt("아래 링크를 복사해 주세요.", shareUrl);
       }
     } catch (e) {
@@ -107,6 +107,7 @@ export default function RegisterMessagePage() {
           ✉️ 메시지 등록
         </h1>
 
+        {/* 제목 입력 */}
         <label
           style={{
             display: "block",
@@ -125,13 +126,14 @@ export default function RegisterMessagePage() {
               width: "100%",
               padding: "10px 12px",
               borderRadius: "8px",
-              border: "1px solid "#d1d5db",
+              border: "1px solid #d1d5db", // ✅ 따옴표 수정
               fontSize: "14px",
             }}
             placeholder="동영상이나 글의 제목을 적어 주세요"
           />
         </label>
 
+        {/* 원본 URL 입력 */}
         <label
           style={{
             display: "block",
@@ -150,13 +152,14 @@ export default function RegisterMessagePage() {
               width: "100%",
               padding: "10px 12px",
               borderRadius: "8px",
-              border: "1px solid "#d1d5db",
+              border: "1px solid #d1d5db", // ✅ 여기도 동일하게
               fontSize: "14px",
             }}
             placeholder="https:// 로 시작하는 원본 링크를 붙여 넣어 주세요"
           />
         </label>
 
+        {/* 제출 버튼 */}
         <button
           type="submit"
           disabled={loading}
@@ -175,6 +178,7 @@ export default function RegisterMessagePage() {
           {loading ? "등록 중..." : "메시지 등록하기"}
         </button>
 
+        {/* 등록 후 공유 링크 박스 */}
         {shareUrl && (
           <div
             style={{
