@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     creator_hint: null,
     url: originalUrl,              // 필요시 유지
     description: note ?? null,
-    registrant_id: registrantId ?? null,
+    registrant_id: null,
   })
   .select()
   .single();
