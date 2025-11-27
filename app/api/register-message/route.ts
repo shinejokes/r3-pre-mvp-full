@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   .insert({
     origin_url: originalUrl,       // ★ 핵심 수정
     title: title ?? null,
-    creator_hint: creatorHint ?? null,
+    creator_hint: null,
     url: originalUrl,              // 필요시 유지
     description: note ?? null,
     registrant_id: registrantId ?? null,
