@@ -5,82 +5,158 @@ import { useState } from "react";
 
 export default function RegisterMessagePage() {
   const [title, setTitle] = useState("");
-  const [url, setUrl] = useState("");
+  const [originalUrl, setOriginalUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resultLink, setResultLink] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!originalUrl.trim()) {
+      alert("원본 URL을 입력해 주세요.");
+      return;
+    }
+
     setLoading(true);
-    setResultLink(null);
-
     try {
-      const res = await fetch("/api/messages", {
+      const res = await fetch("/api/register-message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, url }),
+        body: JSON.stringify({
+          title,
+          originalUrl,
+        }),
       });
 
-      const json = await res.json();
-      if (json?.shareUrl) {
-        setResultLink(json.shareUrl);
-      } else {
-        alert("등록은 되었지만 shareUrl이 반환되지 않았습니다.");
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(`등록 실패: ${data.error ?? "알 수 없는 오류"}`);
+        return;
       }
-    } catch (e) {
-      alert("오류 발생: " + (e as any).message);
+
+      if (!data.shareUrl) {
+        console.error("No shareUrl in response", data);
+        alert("등록은 되었지만 shareUrl이 반환되지 않았습니다.");
+        return;
+      }
+
+      // ✅ 정상적으로 shareUrl을 받은 경우
+      alert(
+        `등록 완료!\n\n아래 링크를 카톡방에 붙여 넣어 보세요.\n\n${data.shareUrl}`
+      );
+
+      // 폼 초기화
+      setTitle("");
+      setOriginalUrl("");
+    } catch (err) {
+      console.error(err);
+      alert("등록 중 알 수 없는 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div style={{ maxWidth: 600, margin: "40px auto", fontFamily: "sans-serif" }}>
-      <h1>📨 메시지 등록</h1>
-      <div style={{ marginTop: 20 }}>
-        <label>제목:</label>
-        <input
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          style={{ width: "100%", padding: 8, marginTop: 4 }}
-          placeholder="예: 멋진 유튜브 영상"
-        />
-      </div>
-
-      <div style={{ marginTop: 20 }}>
-        <label>원본 URL:</label>
-        <input
-          value={url}
-          onChange={e => setUrl(e.target.value)}
-          style={{ width: "100%", padding: 8, marginTop: 4 }}
-          placeholder="https://youtube.com/..."
-        />
-      </div>
-
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#f9fafb",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        paddingTop: "80px",
+        fontFamily: "system-ui, sans-serif",
+      }}
+    >
+      <form
+        onSubmit={handleSubmit}
         style={{
-          marginTop: 30,
-          padding: "12px 20px",
-          background: "#333",
-          color: "white",
-          border: "none",
-          cursor: "pointer",
           width: "100%",
+          maxWidth: "640px",
+          backgroundColor: "#ffffff",
+          borderRadius: "12px",
+          boxShadow: "0 10px 25px rgba(15, 23, 42, 0.12)",
+          padding: "32px",
         }}
       >
-        {loading ? "등록 중…" : "메시지 등록하기"}
-      </button>
+        <h1
+          style={{
+            fontSize: "28px",
+            fontWeight: 700,
+            marginBottom: "24px",
+            textAlign: "center",
+          }}
+        >
+          ✉️ 메시지 등록
+        </h1>
 
-      {resultLink && (
-        <div style={{ marginTop: 30, padding: 20, background: "#f0f0f0" }}>
-          <h3>✅ 등록 완료!</h3>
-          <p>아래 링크를 누르면 hop=1 링크가 생성된 것입니다.</p>
-          <a href={resultLink} style={{ color: "blue" }}>
-            {resultLink}
-          </a>
-        </div>
-      )}
+        <label
+          style={{
+            display: "block",
+            marginBottom: "16px",
+            fontSize: "14px",
+            fontWeight: 600,
+          }}
+        >
+          제목:
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            style={{
+              marginTop: "6px",
+              width: "100%",
+              padding: "10px 12px",
+              borderRadius: "8px",
+              border: "1px solid #d1d5db",
+              fontSize: "14px",
+            }}
+            placeholder="동영상이나 글의 제목을 적어 주세요"
+          />
+        </label>
+
+        <label
+          style={{
+            display: "block",
+            marginBottom: "24px",
+            fontSize: "14px",
+            fontWeight: 600,
+          }}
+        >
+          원본 URL:
+          <input
+            type="text"
+            value={originalUrl}
+            onChange={(e) => setOriginalUrl(e.target.value)}
+            style={{
+              marginTop: "6px",
+              width: "100%",
+              padding: "10px 12px",
+              borderRadius: "8px",
+              border: "1px solid #d1d5db",
+              fontSize: "14px",
+            }}
+            placeholder="https:// 로 시작하는 원본 링크를 붙여 넣어 주세요"
+          />
+        </label>
+
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: "100%",
+            padding: "12px 16px",
+            borderRadius: "8px",
+            border: "none",
+            backgroundColor: loading ? "#6b7280" : "#111827",
+            color: "#ffffff",
+            fontSize: "16px",
+            fontWeight: 600,
+            cursor: loading ? "default" : "pointer",
+          }}
+        >
+          {loading ? "등록 중..." : "메시지 등록하기"}
+        </button>
+      </form>
     </div>
   );
 }

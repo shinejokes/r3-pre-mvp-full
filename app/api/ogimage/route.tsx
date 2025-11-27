@@ -1,117 +1,80 @@
-// app/api/ogimage/route.ts
-import { ImageResponse } from "next/og";
-import { NextRequest } from "next/server";
+// app/api/register-message/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "../../../lib/supabaseServer";
+import { nanoid } from "nanoid";
 
-export const runtime = "edge";
-
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const shareId = searchParams.get("shareId");
+    const body = await req.json();
+    const title: string = body.title?.trim() ?? "";
+    const originalUrl: string = body.originalUrl?.trim() ?? "";
 
-    if (!shareId) {
-      return new Response("Missing shareId", { status: 400 });
+    if (!originalUrl) {
+      return NextResponse.json(
+        { error: "originalUrl is required" },
+        { status: 400 }
+      );
     }
 
     const supabase = supabaseServer();
 
-    // 1) ref_code(=shareId)로 share + message_id 가져오기 ✅
-    const { data: share, error: shareError } = await supabase
-      .from("r3_shares")
-      .select("id, message_id, title, author, target_url")
-      .eq("ref_code", shareId)
+    // 1) 메시지 저장
+    const { data: message, error: messageError } = await supabase
+      .from("r3_messages")
+      .insert({
+        title,
+        original_url: originalUrl,
+      })
+      .select("id")
       .single();
 
-    if (shareError || !share) {
-      console.error("Share not found", shareError);
-      return new Response("Share not found", { status: 404 });
+    if (messageError || !message) {
+      console.error("message insert error", messageError);
+      return NextResponse.json(
+        { error: "failed to insert message" },
+        { status: 500 }
+      );
     }
 
-    // 2) message_id가 없으면 fallback: share 기준으로 count (혹시 모를 옛 데이터용) ✅
-    let views = 0;
+    // 2) 공유 코드(ref_code) 생성
+    const refCode = nanoid(8);
 
-    if (share.message_id) {
-      // (A) 원본 메시지 전체 조회수: message_id 기준 COUNT ✅
-      const { count, error: hitsError } = await supabase
-        .from("r3_hits")
-        .select("id", { count: "exact", head: true })
-        .eq("message_id", share.message_id);
+    // 3) shares row 저장
+    const { error: shareError } = await supabase.from("r3_shares").insert({
+      message_id: message.id,
+      ref_code: refCode,
+      target_url: originalUrl, // 필요에 따라 변경
+      views: 0,
+      hop: 1,
+    });
 
-      if (hitsError) {
-        console.error("Error counting hits by message_id", hitsError);
-      }
-
-      views = count ?? 0;
-    } else {
-      // (B) 옛 구조: ref_code 또는 share_id 기준으로라도 count
-      const { count, error: hitsError } = await supabase
-        .from("r3_hits")
-        .select("id", { count: "exact", head: true })
-        .eq("share_id", share.id);
-
-      if (hitsError) {
-        console.error("Error counting hits by share_id", hitsError);
-      }
-
-      views = count ?? 0;
+    if (shareError) {
+      console.error("share insert error", shareError);
+      return NextResponse.json(
+        { error: "failed to insert share" },
+        { status: 500 }
+      );
     }
 
-    // 3) 이제 views는 "이 원본 메시지 전체를 본 횟수" (스냅샷) ✅
-    const title = share.title ?? "R3 Message";
-    const author = share.author ?? "";
-    const viewsText = `Views ${views}`;
+    // 4) shareUrl 생성해서 응답
+    const base =
+      process.env.R3_APP_BASE_URL || "https://r3-pre-mvp-full.vercel.app";
 
-    // 4) 실제 OG 이미지 렌더링
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            width: "1200px",
-            height: "630px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            padding: "48px",
-            boxSizing: "border-box",
-            backgroundColor: "#111",
-            color: "#fff",
-            fontFamily: "system-ui, sans-serif",
-          }}
-        >
-          <div style={{ fontSize: 40, fontWeight: 700, lineHeight: 1.3 }}>
-            {title}
-          </div>
+    const shareUrl = `${base}/r/${refCode}`;
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-              fontSize: 24,
-            }}
-          >
-            <div>{author}</div>
-            <div
-              style={{
-                padding: "8px 16px",
-                borderRadius: "999px",
-                border: "2px solid #fff",
-                fontWeight: 700,
-              }}
-            >
-              {viewsText} {/* 🔥 여기의 views가 이제 원본 기준 누적 */}
-            </div>
-          </div>
-        </div>
-      ),
+    return NextResponse.json(
       {
-        width: 1200,
-        height: 630,
-      }
+        ok: true,
+        refCode,
+        shareUrl,
+      },
+      { status: 200 }
     );
   } catch (e) {
-    console.error(e);
-    return new Response("Error generating image", { status: 500 });
+    console.error("register-message fatal error", e);
+    return NextResponse.json(
+      { error: "unexpected error" },
+      { status: 500 }
+    );
   }
 }
