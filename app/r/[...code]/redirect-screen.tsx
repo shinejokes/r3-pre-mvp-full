@@ -16,11 +16,11 @@ interface RedirectScreenProps {
   share: ShareRow;
 }
 
-interface CreateLinkResponse {
+interface CreateChildResponse {
   ok: boolean;
-  shareUrl: string;
-  refCode: string;
-  hop: number;
+  url?: string;
+  hop?: number;
+  ref_code?: string;
   error?: string;
 }
 
@@ -37,7 +37,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
   const currentHop = share.hop ?? 1;
   const targetUrl = share.target_url || share.original_url || "";
 
-  // “내 링크 만들기” – 새 ref_code, hop+1 생성
+  // 🔹 "내 링크 만들기" → /api/share-child 호출 (부모 ref_code만 보냄)
   async function handleCreateMyLink() {
     setCreating(true);
     setError(null);
@@ -45,27 +45,24 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
 
     try {
       const body = {
-        originalUrl: share.original_url || share.target_url || "",
-        title: share.title,
-        targetUrl: share.target_url || share.original_url || "",
-        parentRefCode: share.ref_code, // 🔑 부모 share 기준 hop+1
+        parentRefCode: share.ref_code,
       };
 
-      const res = await fetch("/api/messages", {
+      const res = await fetch("/api/share-child", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
 
-      const data: CreateLinkResponse = await res.json();
+      const data: CreateChildResponse = await res.json();
 
-      if (!res.ok || !data.ok) {
+      if (!res.ok || !data.ok || !data.url) {
         throw new Error(data.error || "링크 생성에 실패했습니다.");
       }
 
-      setMyLink(data.shareUrl);
-      setMyHop(data.hop);
-      setCreated(true); // ✅ 생성 완료 상태
+      setMyLink(data.url);
+      setMyHop(data.hop ?? currentHop + 1);
+      setCreated(true);
     } catch (e: any) {
       setError(e?.message ?? "알 수 없는 오류가 발생했습니다.");
     } finally {
@@ -198,9 +195,9 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
                 color: "#d1d5db",
               }}
             >
-              이 링크는 <strong>R3 중간 전달 링크</strong>입니다.  
-              아래 버튼을 눌러 <strong>내 R3 링크</strong>를 만들고,
-              그 링크를 친구들에게 직접 전달해 보세요.
+              이 링크는 <strong>R3 중간 전달 링크</strong>입니다. 아래 버튼을
+              눌러 <strong>내 R3 링크</strong>를 만들고, 그 링크를 친구들에게
+              직접 전달해 보세요.
             </div>
           )}
 
@@ -228,19 +225,20 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           }}
         >
           {!created && (
-            <>
-              <ol
-                style={{
-                  fontSize: 13,
-                  color: "#9ca3af",
-                  paddingLeft: 18,
-                  marginBottom: 10,
-                }}
-              >
-                <li>아래 버튼을 눌러 내 링크를 만듭니다.</li>
-                <li>생성된 링크를 <strong>복사</strong>해서 카카오톡에 붙여 넣습니다.</li>
-              </ol>
-            </>
+            <ol
+              style={{
+                fontSize: 13,
+                color: "#9ca3af",
+                paddingLeft: 18,
+                marginBottom: 10,
+              }}
+            >
+              <li>아래 버튼을 눌러 내 링크를 만듭니다.</li>
+              <li>
+                생성된 링크를 <strong>복사</strong>해서 카카오톡에 붙여
+                넣습니다.
+              </li>
+            </ol>
           )}
 
           <div
