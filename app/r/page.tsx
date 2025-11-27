@@ -8,6 +8,10 @@ export default function RegisterMessagePage() {
   const [originalUrl, setOriginalUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // ✅ 새로 추가: 공유 링크 & 복사 완료 표시
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [copyDone, setCopyDone] = useState(false);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!originalUrl.trim()) {
@@ -28,7 +32,7 @@ export default function RegisterMessagePage() {
 
       const data = await res.json();
 
-      if (!res.ok) {
+      if (!res.ok || data.ok === false) {
         alert(`등록 실패: ${data.error ?? "알 수 없는 오류"}`);
         return;
       }
@@ -39,10 +43,9 @@ export default function RegisterMessagePage() {
         return;
       }
 
-      // ✅ 정상적으로 shareUrl을 받은 경우
-      alert(
-        `등록 완료!\n\n아래 링크를 카톡방에 붙여 넣어 보세요.\n\n${data.shareUrl}`
-      );
+      // ✅ 정상적으로 shareUrl을 받은 경우: 상태로 저장
+      setShareUrl(data.shareUrl);
+      setCopyDone(false);
 
       // 폼 초기화
       setTitle("");
@@ -52,6 +55,23 @@ export default function RegisterMessagePage() {
       alert("등록 중 알 수 없는 오류가 발생했습니다.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleCopy() {
+    if (!shareUrl) return;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopyDone(true);
+      } else {
+        // 구형 브라우저 fallback
+        window.prompt("아래 링크를 복사해 주세요.", shareUrl);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("클립보드 복사에 실패했습니다. 직접 복사해 주세요.");
     }
   }
 
@@ -156,7 +176,47 @@ export default function RegisterMessagePage() {
         >
           {loading ? "등록 중..." : "메시지 등록하기"}
         </button>
-      </form>
-    </div>
-  );
-}
+
+        {/* ✅ 등록 후에만 보이는 공유 링크 박스 */}
+        {shareUrl && (
+          <div
+            style={{
+              marginTop: "24px",
+              padding: "16px",
+              borderRadius: "12px",
+              backgroundColor: "#fff7e6",
+              border: "1px solid #f0c36d",
+            }}
+          >
+            <div
+              style={{
+                marginBottom: "8px",
+                fontWeight: 600,
+                fontSize: "15px",
+              }}
+            >
+              등록 완료! 🎉
+            </div>
+            <div
+              style={{
+                marginBottom: "8px",
+                fontSize: "14px",
+              }}
+            >
+              아래 링크를 카톡방에 붙여 넣어 보세요.
+            </div>
+            <div
+              style={{
+                padding: "8px 10px",
+                borderRadius: "8px",
+                backgroundColor: "white",
+                border: "1px solid #ddd",
+                fontSize: "13px",
+                wordBreak: "break-all",
+                marginBottom: "8px",
+              }}
+            >
+              {shareUrl}
+            </div>
+            <button
+              type="button"
