@@ -16,11 +16,11 @@ interface RedirectScreenProps {
   share: ShareRow;
 }
 
-interface CreateChildResponse {
+interface CreateLinkResponse {
   ok: boolean;
-  url?: string;
-  hop?: number;
-  ref_code?: string;
+  shareUrl: string;
+  refCode: string;
+  hop: number;
   error?: string;
 }
 
@@ -37,31 +37,29 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
   const currentHop = share.hop ?? 1;
   const targetUrl = share.target_url || share.original_url || "";
 
-  // 🔹 "내 링크 만들기" → /api/share-child 호출 (부모 ref_code만 보냄)
+  // “내 링크 만들기” – 부모 ref_code를 보내서 child share 생성
   async function handleCreateMyLink() {
     setCreating(true);
     setError(null);
     setCopied(false);
 
     try {
-      const body = {
-        parentRefCode: share.ref_code,
-      };
-
       const res = await fetch("/api/share-child", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          parentRefCode: share.ref_code,
+        }),
       });
 
-      const data: CreateChildResponse = await res.json();
+      const data: CreateLinkResponse = await res.json();
 
-      if (!res.ok || !data.ok || !data.url) {
+      if (!res.ok || !data.ok) {
         throw new Error(data.error || "링크 생성에 실패했습니다.");
       }
 
-      setMyLink(data.url);
-      setMyHop(data.hop ?? currentHop + 1);
+      setMyLink(data.shareUrl);
+      setMyHop(data.hop);
       setCreated(true);
     } catch (e: any) {
       setError(e?.message ?? "알 수 없는 오류가 발생했습니다.");
@@ -195,9 +193,9 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
                 color: "#d1d5db",
               }}
             >
-              이 링크는 <strong>R3 중간 전달 링크</strong>입니다. 아래 버튼을
-              눌러 <strong>내 R3 링크</strong>를 만들고, 그 링크를 친구들에게
-              직접 전달해 보세요.
+              이 링크는 <strong>R3 중간 전달 링크</strong>입니다. 아래
+              버튼을 눌러 <strong>내 R3 링크</strong>를 만들고, 그 링크를
+              친구들에게 직접 전달해 보세요.
             </div>
           )}
 
@@ -362,6 +360,19 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
               >
                 원본 페이지로 바로 이동하기
               </a>
+            </div>
+          )}
+
+          {/* original_url이 비어 있는 옛 레코드용 경고 */}
+          {!targetUrl && (
+            <div
+              style={{
+                marginTop: 12,
+                fontSize: 13,
+                color: "#f97373",
+              }}
+            >
+              originalUrl이 필요합니다.
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-// app/api/messages/route.ts
+// app/api/register-message/route.ts
 import { NextRequest } from "next/server";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (msgError || !msg) {
-      console.error("messages insert error:", msgError);
+      console.error("register-message: messages insert error:", msgError);
       return Response.json(
         { ok: false, error: "Failed to create message" },
         { status: 500 }
@@ -71,13 +71,14 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (shareError || !share) {
-      console.error("shares insert error:", shareError);
+      console.error("register-message: shares insert error:", shareError);
       return Response.json(
         { ok: false, error: "Failed to create first share" },
         { status: 500 }
       );
     }
 
+    // 3) 프런트에 돌려줄 전체 링크 URL
     const baseUrl =
       process.env.R3_APP_BASE_URL ??
       process.env.NEXT_PUBLIC_APP_BASE_URL ??
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     const shareUrl = `${baseUrl.replace(/\/$/, "")}/r/${share.ref_code}`;
 
-    console.log("messages API OK:", {
+    console.log("register-message OK:", {
       messageId: msg.id,
       refCode: share.ref_code,
       hop: share.hop,
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
       shareUrl,
     });
   } catch (err) {
-    console.error("messages API error:", err);
+    console.error("register-message API error:", err);
     return Response.json(
       { ok: false, error: "Server error" },
       { status: 500 }

@@ -19,7 +19,7 @@ export default function RegisterMessagePage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/register-message", {
+      const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

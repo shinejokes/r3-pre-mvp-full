@@ -1,10 +1,10 @@
-// app/api/messages/route.ts
+// app/api/share/route.ts
 import { NextRequest } from "next/server";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
 export const runtime = "nodejs";
 
-// ref_code용 랜덤 문자열 생성기 (7글자)
+// ref_code 생성기 (messages / share-child와 동일한 규칙)
 function generateRefCode(length = 7): string {
   const chars =
     "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
@@ -18,41 +18,39 @@ function generateRefCode(length = 7): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
+    const messageId = body?.messageId as string | undefined;
 
-    const originalUrl = body?.originalUrl as string | undefined;
-    const title = (body?.title as string | undefined) ?? null;
-    const description = (body?.description as string | undefined) ?? null;
-
-    if (!originalUrl) {
+    if (!messageId) {
       return Response.json(
-        { ok: false, error: "originalUrl is required" },
+        { ok: false, error: "messageId is required" },
         { status: 400 }
       );
     }
 
     const supabase = supabaseServer();
 
-    // 1) r3_messages에 메시지 한 줄 저장
+    // 1) 메시지 정보 읽기 (원본 URL / 제목)
     const { data: msg, error: msgError } = await supabase
       .from("r3_messages")
-      .insert({
-        original_url: originalUrl,
-        url: originalUrl, // 지금은 원본 URL과 동일
-        title,
-        description,
-      })
       .select("id, original_url, title")
-      .single();
+      .eq("id", messageId)
+      .maybeSingle();
 
-    if (msgError || !msg) {
-      console.error("messages insert error:", msgError);
+    if (msgError) {
+      console.error("share: message select error", msgError);
       return Response.json(
-        { ok: false, error: "Failed to create message" },
+        { ok: false, error: "Failed to load message" },
         { status: 500 }
       );
     }
+    if (!msg) {
+      return Response.json(
+        { ok: false, error: "Message not found" },
+        { status: 404 }
+      );
+    }
 
-    // 2) r3_shares에 첫 번째 share (hop=1) 생성
+    // 2) 첫 번째 share 행 INSERT (hop = 1)
     const refCode = generateRefCode();
 
     const { data: share, error: shareError } = await supabase
@@ -63,45 +61,40 @@ export async function POST(req: NextRequest) {
         ref_code: refCode,
         hop: 1,
         views: 0,
+        // 썸네일 / 리다이렉트에 필요한 필드들
         original_url: msg.original_url,
         target_url: msg.original_url,
         title: msg.title,
       })
-      .select("ref_code, hop")
+      .select("id, ref_code, hop")
       .single();
 
     if (shareError || !share) {
-      console.error("shares insert error:", shareError);
+      console.error("share: insert error", shareError);
       return Response.json(
-        { ok: false, error: "Failed to create first share" },
+        { ok: false, error: "Failed to create share" },
         { status: 500 }
       );
     }
 
+    // 3) 프론트에서 사용할 전체 URL
     const baseUrl =
       process.env.R3_APP_BASE_URL ??
       process.env.NEXT_PUBLIC_APP_BASE_URL ??
       process.env.NEXT_PUBLIC_BASE_URL ??
       "https://r3-pre-mvp-full.vercel.app";
 
-    const shareUrl = `${baseUrl.replace(/\/$/, "")}/r/${share.ref_code}`;
-
-    console.log("messages API OK:", {
-      messageId: msg.id,
-      refCode: share.ref_code,
-      hop: share.hop,
-      shareUrl,
-    });
+    const fullUrl = `${baseUrl.replace(/\/$/, "")}/r/${share.ref_code}`;
 
     return Response.json({
       ok: true,
-      messageId: msg.id,
+      shareId: share.id,
       refCode: share.ref_code,
       hop: share.hop,
-      shareUrl,
+      url: fullUrl,
     });
   } catch (err) {
-    console.error("messages API error:", err);
+    console.error("share API error", err);
     return Response.json(
       { ok: false, error: "Server error" },
       { status: 500 }
