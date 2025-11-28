@@ -4,7 +4,7 @@ import { supabaseServer } from "../../../lib/supabaseServer";
 
 export const runtime = "nodejs";
 
-// ref_code용 랜덤 문자열 생성기 (7글자)
+// ref_code용 랜덤 문자열 생성기
 function generateRefCode(length = 7): string {
   const chars =
     "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
     const title = (body?.title as string | undefined) ?? null;
     const description = (body?.description as string | undefined) ?? null;
 
+    // 원본 URL이 없으면 에러
     if (!originalUrl) {
       return Response.json(
         { ok: false, error: "originalUrl is required" },
@@ -32,12 +33,12 @@ export async function POST(req: NextRequest) {
 
     const supabase = supabaseServer();
 
-    // 1) r3_messages에 메시지 한 줄 저장
+    // 1) r3_messages에 메시지 저장
     const { data: msg, error: msgError } = await supabase
       .from("r3_messages")
       .insert({
         original_url: originalUrl,
-        url: originalUrl, // 지금은 원본 URL과 동일
+        url: originalUrl, // 현재는 원본 URL과 동일
         title,
         description,
       })
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2) r3_shares에 첫 번째 share (hop=1) 생성
+    // 2) 첫 번째 share 행 생성 (hop = 1)
     const refCode = generateRefCode();
 
     const { data: share, error: shareError } = await supabase
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
         ref_code: refCode,
         hop: 1,
         views: 0,
+        // 여기서부터가 핵심: 썸네일/리다이렉트에 필요한 필드 모두 채움
         original_url: msg.original_url,
         target_url: msg.original_url,
         title: msg.title,
@@ -78,12 +80,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3) 프런트에 돌려줄 전체 링크 URL
+    // 3) 프런트에서 보여 줄 공유 URL 만들기
     const baseUrl =
       process.env.R3_APP_BASE_URL ??
       process.env.NEXT_PUBLIC_APP_BASE_URL ??
       process.env.NEXT_PUBLIC_BASE_URL ??
-      "https://r3-pre-mvp-full.vercel.app";
+      "http://localhost:3000";
 
     const shareUrl = `${baseUrl.replace(/\/$/, "")}/r/${share.ref_code}`;
 
