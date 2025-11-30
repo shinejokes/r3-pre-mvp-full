@@ -1,9 +1,6 @@
 // app/r/[...code]/redirect-screen.tsx
 "use client";
 
-import { useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
-
 type ShareRow = {
   ref_code: string;
   title: string | null;
@@ -14,49 +11,9 @@ type ShareRow = {
   message_id?: string | null;
 };
 
-// 브라우저용 Supabase 클라이언트
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
 export default function RedirectScreen({ share }: { share: ShareRow }) {
-  useEffect(() => {
-    const logHitAndRedirect = async () => {
-      try {
-        // 1) r3_hits에 기록 (share_id + message_id)
-        if (share.ref_code) {
-          const payload: { share_id: string; message_id?: string } = {
-            share_id: share.ref_code,
-          };
-          if (share.message_id) {
-            payload.message_id = share.message_id;
-          }
-
-          const { error } = await supabase
-            .from("r3_hits")
-            .insert(payload);
-
-          if (error) {
-            console.error("Failed to insert hit (client)", error);
-          }
-        }
-      } catch (err) {
-        console.error("Unexpected error while logging hit", err);
-      }
-
-      // 2) 원본/타겟 URL로 이동
-      const url = share.target_url || share.original_url;
-      if (url) {
-        window.location.href = url;
-      } else {
-        console.warn("No target_url/original_url to redirect to.");
-      }
-    };
-
-    logHitAndRedirect();
-  }, [share]);
-
   const title = share.title || "R3 Hand-Forwarded Link";
+  const url = share.target_url || share.original_url || "";
 
   return (
     <div
@@ -71,14 +28,96 @@ export default function RedirectScreen({ share }: { share: ShareRow }) {
         fontFamily: "system-ui, sans-serif",
       }}
     >
-      <div style={{ textAlign: "center" }}>
-        <h1 style={{ fontSize: 28, marginBottom: 12 }}>{title}</h1>
-        <p style={{ fontSize: 16, opacity: 0.8, marginBottom: 4 }}>
-          원본 링크로 이동하는 중입니다...
-        </p>
-        <p style={{ fontSize: 13, opacity: 0.6 }}>
-          잠시만 기다려 주세요.
-        </p>
+      <div
+        style={{
+          padding: "32px 40px",
+          borderRadius: 24,
+          backgroundColor: "#020617",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.65)",
+          minWidth: 420,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 20,
+            fontWeight: 700,
+            marginBottom: 16,
+            letterSpacing: 2,
+            color: "#38bdf8",
+          }}
+        >
+          R3 Hand-Forwarded Link
+        </div>
+
+        <div
+          style={{
+            fontSize: 24,
+            fontWeight: 600,
+            marginBottom: 8,
+          }}
+        >
+          {title}
+        </div>
+
+        <div
+          style={{
+            fontSize: 14,
+            opacity: 0.75,
+            marginBottom: 24,
+          }}
+        >
+          이 링크는 다른 사람이 R3를 통해 전달한 메시지입니다.
+          <br />
+          아래 버튼을 눌러 원본 콘텐츠로 이동하세요.
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            alignItems: "center",
+          }}
+        >
+          {url ? (
+            <a
+              href={url}
+              style={{
+                display: "inline-block",
+                padding: "10px 28px",
+                borderRadius: 999,
+                background:
+                  "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 40%, #22c55e 100%)",
+                color: "#0f172a",
+                textDecoration: "none",
+                fontWeight: 700,
+                fontSize: 16,
+              }}
+            >
+              원본 링크로 이동
+            </a>
+          ) : (
+            <div
+              style={{
+                fontSize: 13,
+                opacity: 0.7,
+              }}
+            >
+              연결된 원본 URL이 없어 이동할 수 없습니다.
+            </div>
+          )}
+
+          <div
+            style={{
+              fontSize: 12,
+              opacity: 0.6,
+              marginTop: 4,
+            }}
+          >
+            Views: {share.views ?? 0} · Hop: {share.hop ?? 0}
+          </div>
+        </div>
       </div>
     </div>
   );
