@@ -15,6 +15,9 @@ export default function RedirectScreen({ share }: { share: ShareRow }) {
   const title = share.title || "R3 Hand-Forwarded Link";
   const url = share.target_url || share.original_url || "";
 
+  // 중간 전달자가 자기 링크를 만들 때 쓸 주소 (필요에 따라 경로만 바꾸면 됨)
+  const makeMyLinkUrl = `/share?parent=${share.ref_code}`;
+
   return (
     <div
       style={{
@@ -69,17 +72,20 @@ export default function RedirectScreen({ share }: { share: ShareRow }) {
         >
           이 링크는 다른 사람이 R3를 통해 전달한 메시지입니다.
           <br />
-          아래 버튼을 눌러 원본 콘텐츠로 이동하세요.
+          아래 버튼을 눌러 원본 콘텐츠로 이동하거나,
+          <br />
+          나만의 링크를 만들어 전달해 보세요.
         </div>
 
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 12,
+            gap: 10,
             alignItems: "center",
           }}
         >
+          {/* 원본 링크로 이동 */}
           {url ? (
             <a
               href={url}
@@ -108,6 +114,25 @@ export default function RedirectScreen({ share }: { share: ShareRow }) {
             </div>
           )}
 
+          {/* 내 링크 만들기 */}
+          <a
+            href={makeMyLinkUrl}
+            style={{
+              display: "inline-block",
+              padding: "8px 22px",
+              borderRadius: 999,
+              border: "1px solid #38bdf8",
+              color: "#e5e7eb",
+              textDecoration: "none",
+              fontWeight: 600,
+              fontSize: 14,
+              marginTop: 4,
+            }}
+          >
+            내 링크 만들기
+          </a>
+
+          {/* 하단 정보 */}
           <div
             style={{
               fontSize: 12,
