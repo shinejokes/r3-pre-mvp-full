@@ -15,19 +15,33 @@ type ShareRow = {
   message_id: string | null; // ✅ 원본 메시지 ID
 };
 
-interface PageProps {
-  params: { code: string[] };
-}
+type RouteParams = {
+  code: string[] | string;
+};
 
-function extractRefCode(code: string[] | string): string {
-  return Array.isArray(code) ? code[0] : code;
+/** URL 파라미터에서 실제 ref_code 추출 */
+function getRefCode(params: RouteParams): string | null {
+  const raw = params.code;
+  if (Array.isArray(raw)) {
+    return raw[0] ?? null;
+  }
+  if (typeof raw === "string" && raw.length > 0) {
+    return raw;
+  }
+  return null;
 }
 
 // ---------- 메타데이터(OG 이미지) ----------
 export async function generateMetadata(
-  { params }: PageProps
+  { params }: { params: RouteParams }
 ): Promise<Metadata> {
-  const refCode = extractRefCode(params.code);
+  const refCode = getRefCode(params);
+
+  if (!refCode) {
+    return {
+      title: "R3 Hand-Forwarded Link",
+    };
+  }
 
   const supabase = supabaseServer();
   const { data } = await supabase
@@ -59,8 +73,33 @@ export async function generateMetadata(
 }
 
 // ---------- 실제 페이지 ----------
-export default async function ShareRedirectPage({ params }: PageProps) {
-  const refCode = extractRefCode(params.code);
+export default async function ShareRedirectPage(
+  { params }: { params: RouteParams }
+) {
+  const refCode = getRefCode(params);
+
+  // 0) 코드 자체를 못 읽으면 여기서 종료
+  if (!refCode) {
+    return (
+      <div
+        style={{
+          margin: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          backgroundColor: "#020617",
+          color: "#e5e7eb",
+          fontFamily: "system-ui, sans-serif",
+        }}
+      >
+        <div>
+          <h1>유효하지 않은 링크입니다</h1>
+          <p>코드를 읽지 못했습니다 (params 형식 오류).</p>
+        </div>
+      </div>
+    );
+  }
 
   const supabase = supabaseServer();
   const { data, error } = await supabase
@@ -71,7 +110,10 @@ export default async function ShareRedirectPage({ params }: PageProps) {
     .eq("ref_code", refCode)
     .maybeSingle<ShareRow>();
 
+  // 1) share를 못 찾은 경우
   if (error || !data) {
+    console.error("Share not found or Supabase error", { refCode, error });
+
     return (
       <div
         style={{
@@ -93,7 +135,7 @@ export default async function ShareRedirectPage({ params }: PageProps) {
     );
   }
 
-  // 1) 클릭 로그: r3_hits에 share_id + message_id 기록
+  // 2) 클릭 로그: r3_hits에 share_id + message_id 기록
   const hitPayload: { share_id: string; message_id?: string } = {
     share_id: refCode,
   };
@@ -109,7 +151,7 @@ export default async function ShareRedirectPage({ params }: PageProps) {
     console.error("Failed to insert hit", hitError);
   }
 
-  // 2) 이 공유 링크 자체의 views 컬럼도 +1 (기존 동작 유지)
+  // 3) 이 공유 링크 자체의 views 컬럼도 +1 (기존 동작 유지)
   const currentViews = data.views ?? 0;
 
   const { error: updateError } = await supabase
