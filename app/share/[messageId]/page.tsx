@@ -1,233 +1,167 @@
-// app/share/[messageId]/page.tsx
-'use client'
+// app/r/[...code]/redirect-screen.tsx
+"use client";
 
-import React, { useState } from 'react'
-import { useParams, useSearchParams } from 'next/navigation'
+type ShareRow = {
+  ref_code: string;
+  title: string | null;
+  original_url: string | null;
+  target_url: string | null;
+  views: number | null;
+  hop: number | null;
+  message_id?: string | null; // ✅ 원본 메시지 ID
+};
 
-export default function SharePage() {
-  const params = useParams<{ messageId?: string }>()
-  const searchParams = useSearchParams()
+interface RedirectScreenProps {
+  share: ShareRow;
+}
 
-  const initialMessageId = (params?.messageId as string) || ''
-  const parentRefCode =
-    (searchParams && searchParams.get('parentRefCode')) || ''
+export default function RedirectScreen({ share }: RedirectScreenProps) {
+  const safeTitle = share.title || "R3 Hand-Forwarded Link";
+  const currentViews = share.views ?? 0;
+  const currentHop = share.hop ?? 1;
+  const targetUrl = share.target_url || share.original_url || "";
 
-  const [messageId, setMessageId] = useState(initialMessageId)
-  const [sharerName, setSharerName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [shareUrl, setShareUrl] = useState<string | null>(null)
-  const [hop, setHop] = useState<number | null>(null)
-
-  const handleCreateShare = async () => {
-    setLoading(true)
-    setError(null)
-    setShareUrl(null)
-
-    const trimmedMessageId = messageId.trim()
-    if (!trimmedMessageId) {
-      setError('메시지 ID를 입력해 주세요.')
-      setLoading(false)
-      return
-    }
-
-    try {
-      const res = await fetch('/api/create-share', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messageId: trimmedMessageId,
-          parentRefCode: parentRefCode || null,
-          sharerName: sharerName.trim() || null,
-        }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok || !data.ok) {
-        setError(data.error || '공유 링크 생성에 실패했습니다.')
-        setLoading(false)
-        return
-      }
-
-      const origin =
-        typeof window !== 'undefined' ? window.location.origin : ''
-
-      const url = `${origin}/r/${data.refCode}`
-      setShareUrl(url)
-      setHop(data.hop ?? null)
-    } catch (e) {
-      console.error(e)
-      setError('서버 통신 중 오류가 발생했습니다.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleCopy = async () => {
-    if (!shareUrl) return
-    try {
-      await navigator.clipboard.writeText(shareUrl)
-      alert('링크를 클립보드에 복사했습니다.')
-    } catch {
-      alert('복사에 실패했습니다. 직접 선택해서 복사해 주세요.')
-    }
-  }
+  // ✅ 내 링크 만들기: /share/[messageId]?parentRefCode=ref_code 로 이동
+  const makeMyLinkUrl = share.message_id
+    ? `/share/${share.message_id}?parentRefCode=${share.ref_code}`
+    : `/share?parentRefCode=${share.ref_code}`;
 
   return (
     <div
       style={{
-        maxWidth: 480,
-        margin: '40px auto',
-        padding: '24px',
-        borderRadius: 16,
-        border: '1px solid #ddd',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+        margin: 0,
+        minHeight: "100vh",
+        backgroundColor: "#020617",
+        color: "#e5e7eb",
+        fontFamily: "system-ui, sans-serif",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
       }}
     >
-      <h1 style={{ fontSize: 24, marginBottom: 8 }}>내 공유 링크 만들기</h1>
-      <p style={{ fontSize: 14, color: '#555', marginBottom: 24 }}>
-        이 메시지에 대한 나만의 공유 링크를 만들고,
-        <br />
-        카카오톡 등으로 퍼나르면, 조회수와 hop이 함께 기록됩니다.
-      </p>
-
-      {/* 메시지 ID 입력 */}
-      <label
+      <div
         style={{
-          display: 'block',
-          fontSize: 14,
-          fontWeight: 600,
-          marginBottom: 4,
+          maxWidth: 720,
+          width: "100%",
+          borderRadius: 24,
+          border: "1px solid rgba(148,163,184,0.6)",
+          padding: "32px 32px 26px 32px",
+          background:
+            "radial-gradient(circle at top left, #1d2837 0, #020617 55%)",
+          boxShadow: "0 20px 48px rgba(0,0,0,0.55)",
+          textAlign: "center",
         }}
       >
-        메시지 ID:
-      </label>
-      <input
-        type="text"
-        value={messageId}
-        onChange={(e) => setMessageId(e.target.value)}
-        placeholder="r3_messages 테이블의 id를 붙여 넣으세요."
-        style={{
-          width: '100%',
-          padding: '8px 10px',
-          borderRadius: 8,
-          border: '1px solid #ccc',
-          marginBottom: 16,
-          fontSize: 13,
-          fontFamily: 'monospace',
-        }}
-      />
-
-      <label
-        style={{
-          display: 'block',
-          fontSize: 14,
-          fontWeight: 600,
-          marginBottom: 4,
-        }}
-      >
-        내 이름 / 닉네임 (선택)
-      </label>
-      <input
-        type="text"
-        value={sharerName}
-        onChange={(e) => setSharerName(e.target.value)}
-        placeholder="예: 홍길동, JKShin, ..."
-        style={{
-          width: '100%',
-          padding: '8px 10px',
-          borderRadius: 8,
-          border: '1px solid #ccc',
-          marginBottom: 16,
-          fontSize: 14,
-        }}
-      />
-
-      <button
-        type="button"
-        onClick={handleCreateShare}
-        disabled={loading}
-        style={{
-          width: '100%',
-          padding: '10px 12px',
-          borderRadius: 999,
-          border: 'none',
-          fontSize: 15,
-          fontWeight: 600,
-          cursor: loading ? 'default' : 'pointer',
-          background: loading ? '#999' : '#2b6cb0',
-          color: 'white',
-        }}
-      >
-        {loading ? 'Creating...' : 'Create share link'}
-      </button>
-
-      {error && (
+        {/* 상단 타이틀 */}
         <div
           style={{
-            marginTop: 16,
-            padding: '10px 12px',
-            borderRadius: 8,
-            background: '#ffe5e5',
-            color: '#b00020',
-            fontSize: 13,
+            fontSize: 16,
+            letterSpacing: 6,
+            textTransform: "uppercase",
+            color: "#38bdf8",
+            marginBottom: 16,
           }}
         >
-          {error}
+          R3 Hand-Forwarded Link
         </div>
-      )}
 
-      {shareUrl && (
+        {/* 메시지 제목 */}
         <div
           style={{
-            marginTop: 20,
-            padding: '12px 12px',
-            borderRadius: 8,
-            background: '#f0f9ff',
-            fontSize: 13,
+            fontSize: 28,
+            fontWeight: 700,
+            marginBottom: 10,
           }}
         >
-          <div style={{ marginBottom: 6, fontWeight: 600 }}>
-            공유 링크가 생성되었습니다.
-          </div>
-          <div
-            style={{
-              wordBreak: 'break-all',
-              padding: '6px 8px',
-              borderRadius: 6,
-              background: 'white',
-              border: '1px solid #cbd5e0',
-              marginBottom: 8,
-            }}
-          >
-            {shareUrl}
-          </div>
-          {hop !== null && (
-            <div style={{ marginBottom: 8 }}>
-              <strong>hop:</strong> {hop}
+          {safeTitle}
+        </div>
+
+        {/* 설명 문장 */}
+        <div
+          style={{
+            fontSize: 14,
+            color: "#cbd5f5",
+            lineHeight: 1.7,
+            marginBottom: 28,
+          }}
+        >
+          이 링크는 다른 사람이 R3를 통해 전달한 메시지입니다.
+          <br />
+          아래 버튼을 눌러 원본 콘텐츠로 이동하거나,
+          <br />
+          나만의 링크를 만들어 전달해 보세요.
+        </div>
+
+        {/* 버튼 영역 */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            alignItems: "center",
+            marginBottom: 18,
+          }}
+        >
+          {/* 원본 링크로 이동 */}
+          {targetUrl ? (
+            <a
+              href={targetUrl}
+              style={{
+                display: "inline-block",
+                padding: "10px 28px",
+                borderRadius: 999,
+                background:
+                  "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 40%, #22c55e 100%)",
+                color: "#0f172a",
+                textDecoration: "none",
+                fontWeight: 700,
+                fontSize: 16,
+              }}
+            >
+              원본 링크로 이동
+            </a>
+          ) : (
+            <div
+              style={{
+                fontSize: 13,
+                opacity: 0.7,
+              }}
+            >
+              연결된 원본 URL이 없어 이동할 수 없습니다.
             </div>
           )}
-          <button
-            type="button"
-            onClick={handleCopy}
+
+          {/* 내 링크 만들기 – /share/[messageId] 페이지로 이동 */}
+          <a
+            href={makeMyLinkUrl}
             style={{
-              padding: '6px 10px',
+              display: "inline-block",
+              padding: "8px 22px",
               borderRadius: 999,
-              border: 'none',
-              background: '#3182ce',
-              color: 'white',
-              fontSize: 13,
-              cursor: 'pointer',
+              border: "1px solid #38bdf8",
+              color: "#e5e7eb",
+              textDecoration: "none",
+              fontWeight: 600,
+              fontSize: 14,
+              marginTop: 4,
             }}
           >
-            링크 복사하기
-          </button>
+            내 링크 만들기
+          </a>
         </div>
-      )}
+
+        {/* 하단 Views / Hop 정보 */}
+        <div
+          style={{
+            fontSize: 12,
+            opacity: 0.7,
+            marginTop: 4,
+          }}
+        >
+          Views: {currentViews} · Hop: {currentHop}
+        </div>
+      </div>
     </div>
-  )
+  );
 }
