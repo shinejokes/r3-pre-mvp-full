@@ -22,9 +22,12 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
   const targetUrl = share.target_url || share.original_url || "";
 
   // 🔹 내 링크 만들기: /share?messageId=...&parentRefCode=...
-  const makeMyLinkUrl = `/share?messageId=${
-    share.message_id ?? ""
-  }&parentRefCode=${share.ref_code}`;
+// ✅ message_id가 있으면 /share/[messageId]?parentRefCode=... 로 이동
+//    (예전 동작 복원)
+const makeMyLinkUrl = share.message_id
+  ? `/share/${share.message_id}?parentRefCode=${share.ref_code}`
+  : `/share`;
+
 
   return (
     <div
