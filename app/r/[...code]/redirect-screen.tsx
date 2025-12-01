@@ -21,14 +21,10 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
   const currentHop = share.hop ?? 1;
   const targetUrl = share.target_url || share.original_url || "";
 
-  // 🔹 내 링크 만들기: /share?messageId=...&parentRefCode=...
-// ✅ message_id가 있으면 /share/[messageId]?parentRefCode=... 로 이동
-//    (예전 동작 복원)
-const makeMyLinkUrl = share.message_id
-  ? `/share/${share.message_id}?parentRefCode=${share.ref_code}`
-  : `/share?parentRefCode=${share.ref_code}`;
-
-
+  // ✅ 내 링크 만들기: /share/[messageId]?parentRefCode=... 로 이동
+  const makeMyLinkUrl = share.message_id
+    ? `/share/${share.message_id}?parentRefCode=${share.ref_code}`
+    : `/share`;
 
   return (
     <div
@@ -57,6 +53,7 @@ const makeMyLinkUrl = share.message_id
           textAlign: "center",
         }}
       >
+        {/* 상단 타이틀 */}
         <div
           style={{
             fontSize: 16,
@@ -69,6 +66,7 @@ const makeMyLinkUrl = share.message_id
           R3 Hand-Forwarded Link
         </div>
 
+        {/* 메시지 제목 */}
         <div
           style={{
             fontSize: 28,
@@ -79,6 +77,7 @@ const makeMyLinkUrl = share.message_id
           {safeTitle}
         </div>
 
+        {/* 설명 문장 */}
         <div
           style={{
             fontSize: 14,
@@ -94,6 +93,7 @@ const makeMyLinkUrl = share.message_id
           나만의 링크를 만들어 전달해 보세요.
         </div>
 
+        {/* 버튼 영역 */}
         <div
           style={{
             display: "flex",
@@ -151,6 +151,7 @@ const makeMyLinkUrl = share.message_id
           </a>
         </div>
 
+        {/* 하단 Views / Hop 정보 */}
         <div
           style={{
             fontSize: 12,

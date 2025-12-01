@@ -10,7 +10,7 @@ export default function ShareWithMessagePage({
   params,
   searchParams,
 }: ShareWithMessagePageProps) {
-  const messageId = params.messageId; // URL 세그먼트
+  const messageId = params.messageId;
   const parentRefCode = searchParams?.parentRefCode ?? "";
 
   return (
