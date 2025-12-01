@@ -26,7 +26,8 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
 //    (예전 동작 복원)
 const makeMyLinkUrl = share.message_id
   ? `/share/${share.message_id}?parentRefCode=${share.ref_code}`
-  : `/share`;
+  : `/share?parentRefCode=${share.ref_code}`;
+
 
 
   return (
