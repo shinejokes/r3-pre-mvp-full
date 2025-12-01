@@ -4,50 +4,62 @@
 type ShareRow = {
   ref_code: string;
   title: string | null;
-  target_url: string | null;
   original_url: string | null;
+  target_url: string | null;
   views: number | null;
   hop: number | null;
   message_id?: string | null;
 };
 
-export default function RedirectScreen({ share }: { share: ShareRow }) {
-  const title = share.title || "R3 Hand-Forwarded Link";
-  const url = share.target_url || share.original_url || "";
+interface RedirectScreenProps {
+  share: ShareRow;
+}
 
-  // 중간 전달자가 자기 링크를 만들 때 쓸 주소 (필요에 따라 경로만 바꾸면 됨)
-  const makeMyLinkUrl = `/share?parent=${share.ref_code}`;
+export default function RedirectScreen({ share }: RedirectScreenProps) {
+  const safeTitle = share.title || "R3 Hand-Forwarded Link";
+  const currentViews = share.views ?? 0;
+  const currentHop = share.hop ?? 1;
+  const targetUrl = share.target_url || share.original_url || "";
+
+  // 🔹 내 링크 만들기: /share?messageId=...&parentRefCode=...
+  const makeMyLinkUrl = `/share?messageId=${
+    share.message_id ?? ""
+  }&parentRefCode=${share.ref_code}`;
 
   return (
     <div
       style={{
         margin: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "100vh",
+        minHeight: "100vh",
         backgroundColor: "#020617",
         color: "#e5e7eb",
         fontFamily: "system-ui, sans-serif",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
       }}
     >
       <div
         style={{
-          padding: "32px 40px",
+          maxWidth: 720,
+          width: "100%",
           borderRadius: 24,
-          backgroundColor: "#020617",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.65)",
-          minWidth: 420,
+          border: "1px solid rgba(148,163,184,0.6)",
+          padding: "32px 32px 26px 32px",
+          background:
+            "radial-gradient(circle at top left, #1d2837 0, #020617 55%)",
+          boxShadow: "0 20px 48px rgba(0,0,0,0.55)",
           textAlign: "center",
         }}
       >
         <div
           style={{
-            fontSize: 20,
-            fontWeight: 700,
-            marginBottom: 16,
-            letterSpacing: 2,
+            fontSize: 16,
+            letterSpacing: 6,
+            textTransform: "uppercase",
             color: "#38bdf8",
+            marginBottom: 16,
           }}
         >
           R3 Hand-Forwarded Link
@@ -55,19 +67,20 @@ export default function RedirectScreen({ share }: { share: ShareRow }) {
 
         <div
           style={{
-            fontSize: 24,
-            fontWeight: 600,
-            marginBottom: 8,
+            fontSize: 28,
+            fontWeight: 700,
+            marginBottom: 10,
           }}
         >
-          {title}
+          {safeTitle}
         </div>
 
         <div
           style={{
             fontSize: 14,
-            opacity: 0.75,
-            marginBottom: 24,
+            color: "#cbd5f5",
+            lineHeight: 1.7,
+            marginBottom: 28,
           }}
         >
           이 링크는 다른 사람이 R3를 통해 전달한 메시지입니다.
@@ -81,14 +94,15 @@ export default function RedirectScreen({ share }: { share: ShareRow }) {
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 10,
+            gap: 12,
             alignItems: "center",
+            marginBottom: 18,
           }}
         >
           {/* 원본 링크로 이동 */}
-          {url ? (
+          {targetUrl ? (
             <a
-              href={url}
+              href={targetUrl}
               style={{
                 display: "inline-block",
                 padding: "10px 28px",
@@ -114,7 +128,7 @@ export default function RedirectScreen({ share }: { share: ShareRow }) {
             </div>
           )}
 
-          {/* 내 링크 만들기 */}
+          {/* 내 링크 만들기 페이지로 이동 */}
           <a
             href={makeMyLinkUrl}
             style={{
@@ -131,17 +145,16 @@ export default function RedirectScreen({ share }: { share: ShareRow }) {
           >
             내 링크 만들기
           </a>
+        </div>
 
-          {/* 하단 정보 */}
-          <div
-            style={{
-              fontSize: 12,
-              opacity: 0.6,
-              marginTop: 4,
-            }}
-          >
-            Views: {share.views ?? 0} · Hop: {share.hop ?? 0}
-          </div>
+        <div
+          style={{
+            fontSize: 12,
+            opacity: 0.7,
+            marginTop: 4,
+          }}
+        >
+          Views: {currentViews} · Hop: {currentHop}
         </div>
       </div>
     </div>
