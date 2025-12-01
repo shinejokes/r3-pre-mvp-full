@@ -118,6 +118,7 @@ export default async function ShareRedirectPage({ params }: PageProps) {
   }
 
   // 2) 이 공유 링크 자체의 views 컬럼도 +1 (기존 동작 유지)
+   // 2) 이 공유 링크 자체의 views 컬럼도 +1 (기존 동작 유지)
   const currentViews = data.views ?? 0;
 
   const { error: updateError } = await supabase
@@ -130,5 +131,26 @@ export default async function ShareRedirectPage({ params }: PageProps) {
     views: updateError ? currentViews : currentViews + 1,
   };
 
-  return <RedirectScreen share={updatedShare} />;
+  // 3) message_id 기준 "원본 전체 조회수" 계산
+  let originalTotalViews = updatedShare.views ?? 0;
+
+  if (updatedShare.message_id) {
+    const { count, error: countError } = await supabase
+      .from("r3_hits")
+      .select("id", { count: "exact", head: true })
+      .eq("message_id", updatedShare.message_id);
+
+    if (!countError && typeof count === "number") {
+      originalTotalViews = count;
+    }
+  }
+
+  // 4) 중간 화면에는 원본 기준 조회수를 넘겨준다
+  const shareForScreen: ShareRow = {
+    ...updatedShare,
+    views: originalTotalViews,
+  };
+
+  return <RedirectScreen share={shareForScreen} />;
 }
+
