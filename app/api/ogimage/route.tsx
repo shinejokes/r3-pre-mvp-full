@@ -169,7 +169,7 @@ export async function GET(req: NextRequest) {
             right: 60,
             bottom: 60,
             padding: "28px 44px",
-            borderRadius: 12,
+            borderRadius: 36,
             backgroundColor: "rgba(0,0,0,0.80)",
             border: "4px solid #ffffff",
             display: "flex",
