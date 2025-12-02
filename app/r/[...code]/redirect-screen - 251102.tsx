@@ -8,9 +8,8 @@ type ShareRow = {
   title: string | null;
   original_url: string | null;
   target_url: string | null;
-  views: number | null;      // 전체 조회수(원본 기준, 서버에서 계산해서 넣어줌)
+  views: number | null;
   hop: number | null;
-  self_views?: number | null; // 내 링크 조회수(해당 ref_code 기준) - 나중에 서버에서 채워줄 예정
 };
 
 interface RedirectScreenProps {
@@ -33,14 +32,8 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const safeTitle = share.title || "R³ Hand-Forwarded Link";
-
-  // 전체 조회수 (원본 메시지 기준) – 서버에서 message_id로 count해서 share.views에 넣어줌
-  const totalViews = share.views ?? 0;
-
-  // 내 링크 조회수 (해당 ref_code 기준) – 나중에 서버에서 self_views를 채우면 MV에 표시됨
-  const myViews = share.self_views ?? 0;
-
+  const safeTitle = share.title || "R3 Hand-Forwarded Link";
+  const currentViews = share.views ?? 0;
   const currentHop = share.hop ?? 1;
   const targetUrl = share.target_url || share.original_url || "";
 
@@ -113,7 +106,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         }}
       >
         {/* 상단: 제목 */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 20 }}>
           <div
             style={{
               fontSize: 14,
@@ -123,7 +116,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
               marginBottom: 6,
             }}
           >
-            R³ · HAND-FORWARDED LINK
+            R3 · HAND-FORWARDED LINK
           </div>
           <div
             style={{
@@ -136,76 +129,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           </div>
         </div>
 
-        {/* 중단: R³ / Views / MV / Hop 배지 */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 8,
-            alignItems: "center",
-            marginBottom: 20,
-          }}
-        >
-          {/* R³ 로고 */}
-          <div
-            style={{
-              padding: "4px 10px",
-              borderRadius: 999,
-              border: "1px solid #4b5563",
-              fontSize: 12,
-              letterSpacing: 1,
-              textTransform: "uppercase",
-              color: "#e5e7eb",
-              opacity: 0.85,
-            }}
-          >
-            R³
-          </div>
-
-          {/* 전체 조회수 Views */}
-          <div
-            style={{
-              padding: "4px 12px",
-              borderRadius: 999,
-              border: "1px solid #38bdf8",
-              fontSize: 12,
-              color: "#e0f2fe",
-              backgroundColor: "rgba(15,23,42,0.9)",
-            }}
-          >
-            Views {totalViews}
-          </div>
-
-          {/* 내 링크 조회수 MV (My Views) */}
-          <div
-            style={{
-              padding: "4px 12px",
-              borderRadius: 999,
-              border: "1px solid #22c55e",
-              fontSize: 12,
-              color: "#bbf7d0",
-              backgroundColor: "rgba(5,46,22,0.9)",
-            }}
-          >
-            MV {myViews}
-          </div>
-
-          {/* Hop */}
-          <div
-            style={{
-              padding: "4px 12px",
-              borderRadius: 999,
-              border: "1px solid #a855f7",
-              fontSize: 12,
-              color: "#f5d0fe",
-              backgroundColor: "rgba(30,27,75,0.9)",
-            }}
-          >
-            Hop {currentHop}
-          </div>
-        </div>
-
-        {/* 설명 문구 */}
+        {/* 중단: 현재 Views / Hop */}
         <div
           style={{
             display: "flex",
@@ -214,6 +138,54 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
             marginBottom: 24,
           }}
         >
+          <div
+            style={{
+              display: "flex",
+              gap: 24,
+              alignItems: "center",
+              justifyContent: "flex-start",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#9ca3af",
+                  marginBottom: 4,
+                }}
+              >
+                현재 Views
+              </div>
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 800,
+                }}
+              >
+                {currentViews}
+              </div>
+            </div>
+            <div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#9ca3af",
+                  marginBottom: 4,
+                }}
+              >
+                Hop
+              </div>
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 800,
+                }}
+              >
+                {currentHop}
+              </div>
+            </div>
+          </div>
+
           {!created && (
             <div
               style={{
@@ -221,9 +193,9 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
                 color: "#d1d5db",
               }}
             >
-              이 링크는 <strong>R³ 중간 전달 링크</strong>입니다. 아래 버튼을
-              눌러 <strong>내 R³ 링크</strong>를 만들고, 그 링크를 친구들에게
-              직접 전달해 보세요.
+              이 링크는 <strong>R3 중간 전달 링크</strong>입니다. 아래
+              버튼을 눌러 <strong>내 R3 링크</strong>를 만들고, 그 링크를
+              친구들에게 직접 전달해 보세요.
             </div>
           )}
 
@@ -236,7 +208,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
             >
               ✅ <strong>중간 전달자 등록이 완료되었습니다.</strong>{" "}
               아래에 만들어진{" "}
-              <span style={{ fontWeight: 600 }}>내 R³ 링크</span>를 복사해
+              <span style={{ fontWeight: 600 }}>내 R3 링크</span>를 복사해
               카카오톡에 붙여 넣어 보세요.
             </div>
           )}
@@ -261,7 +233,8 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
             >
               <li>아래 버튼을 눌러 내 링크를 만듭니다.</li>
               <li>
-                생성된 링크를 <strong>복사</strong>해서 카카오톡에 붙여 넣습니다.
+                생성된 링크를 <strong>복사</strong>해서 카카오톡에 붙여
+                넣습니다.
               </li>
             </ol>
           )}
