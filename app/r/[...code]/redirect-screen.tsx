@@ -378,15 +378,18 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
               }}
             >
               <a
-                href={targetUrl}
-                style={{
-                  fontSize: 12,
-                  color: "#9ca3af",
-                  textDecoration: "underline",
-                }}
-              >
-                원본 페이지로 바로 이동하기
-              </a>
+  href={targetUrl}
+  style={{
+    fontSize: 13,
+    color: "#60a5fa",          // 밝은 파란색
+    fontWeight: 600,
+    textDecoration: "underline",
+    textUnderlineOffset: 3,
+  }}
+>
+  원본 페이지로 바로 이동하기 ↗
+</a>
+
             </div>
           )}
 
