@@ -181,7 +181,7 @@ export async function GET(req: NextRequest) {
             color: "#ffffff",
           }}
         >
-          <span>R3</span>
+          <span>R³</span>
           <span>Views {viewsForDisplay}</span>
           <span>Hop {hop}</span>
         </div>
