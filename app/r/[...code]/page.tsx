@@ -1,5 +1,6 @@
 // app/r/[...code]/page.tsx
 import type { Metadata } from "next";
+import Link from "next/link";
 import { supabaseServer } from "../../../lib/supabaseServer";
 import RedirectScreen from "./redirect-screen";
 
@@ -45,7 +46,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const title = data?.title || "R³ Hand-Forwarded Link";
 
-  const base = process.env.R3_APP_BASE_URL || "https://r3-pre-mvp-full.vercel.app";
+  const base =
+    process.env.R3_APP_BASE_URL || "https://r3-pre-mvp-full.vercel.app";
   const ogImageUrl = `${base}/api/ogimage?shareId=${refCode}`;
 
   return {
@@ -76,7 +78,29 @@ export default async function ShareRedirectPage({ params }: PageProps) {
 
   if (error || !data) {
     return (
-      <div style={{ backgroundColor: "#020617", height: "100vh", color: "white" }}>
+      <div
+        style={{
+          backgroundColor: "#020617",
+          height: "100vh",
+          color: "white",
+          padding: "12px 16px",
+        }}
+      >
+        {/* 🔽 홈으로 링크 추가 */}
+        <div style={{ marginBottom: 16 }}>
+          <Link
+            href="/"
+            style={{
+              fontSize: 13,
+              color: "#e5e7eb",
+              textDecoration: "none",
+            }}
+          >
+            ← R3 실험 홈으로
+          </Link>
+        </div>
+        {/* 🔼 */}
+
         <h1>유효하지 않은 링크입니다.</h1>
       </div>
     );
@@ -124,9 +148,35 @@ export default async function ShareRedirectPage({ params }: PageProps) {
   --------------------------------------------- */
   const shareForScreen: ShareRow = {
     ...data,
-    views: totalViews,   // 전체 조회수
+    views: totalViews,    // 전체 조회수
     self_views: selfViews, // 내 링크 조회수
   };
 
-  return <RedirectScreen share={shareForScreen} />;
+  return (
+    <div
+      style={{
+        backgroundColor: "#020617",
+        minHeight: "100vh",
+        color: "white",
+      }}
+    >
+      {/* 🔽 홈으로 링크 추가 */}
+      <div style={{ padding: "12px 16px", marginBottom: 8 }}>
+        <Link
+          href="/"
+          style={{
+            fontSize: 13,
+            color: "#e5e7eb",
+            textDecoration: "none",
+          }}
+        >
+          ← R3 실험 홈으로
+        </Link>
+      </div>
+      {/* 🔼 */}
+
+      {/* 기존 화면 전체는 그대로 RedirectScreen에서 렌더링 */}
+      <RedirectScreen share={shareForScreen} />
+    </div>
+  );
 }
