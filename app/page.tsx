@@ -1,6 +1,7 @@
 // app/page.tsx
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { supabaseServer } from "../lib/supabaseServer";
 
 type TopShare = {
@@ -296,7 +297,7 @@ export default async function HomePage() {
                           overflow: "hidden",
                           whiteSpace: "nowrap",
                         }}
-                        title={"-"}
+                        title="-"
                       >
                         -
                       </td>
@@ -363,29 +364,130 @@ export default async function HomePage() {
             paddingTop: 12,
           }}
         >
-      R3 Demo · 실험용 버전 · Supabase + Next.js
+          R3 Demo · 실험용 버전 · Supabase + Next.js
         </footer>
       </div>
     </main>
   );
 }
 
-
-
 // ------------------------
 // 재사용 UI 컴포넌트
 // ------------------------
 
-function EmptyCard(props: { children: React.ReactNode }) {
+function EmptyCard(props: { children: ReactNode }) {
   return (
-    <div> ... </div>
+    <div
+      style={{
+        padding: 16,
+        borderRadius: 12,
+        border: "1px dashed rgba(230,215,255,0.9)",
+        fontSize: 14,
+        color: "#e0d4ff",
+        backgroundColor: "rgba(10,0,40,0.4)",
+      }}
+    >
+      {props.children}
+    </div>
   );
 }
 
 function RankedList(props: { items: TopShare[]; showHopHighlight?: boolean }) {
+  const { items, showHopHighlight } = props;
+
   return (
-    <ol> ... </ol>
+    <ol
+      style={{
+        listStyle: "none",
+        margin: 0,
+        padding: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+      }}
+    >
+      {items.map((item, index) => (
+        <li key={item.id}>
+          <Link
+            href={`/r/${item.ref_code}`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.18)",
+              textDecoration: "none",
+              background: "rgba(10,0,40,0.6)",
+            }}
+          >
+            {/* 순위 동그라미 */}
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 14,
+                fontWeight: 600,
+                background:
+                  index === 0
+                    ? "linear-gradient(135deg, #ffd86a, #ffb347)"
+                    : "rgba(255,255,255,0.08)",
+                color: index === 0 ? "#3b2200" : "#f9f2ff",
+              }}
+            >
+              {index + 1}
+            </div>
+
+            {/* 제목 + 코드 */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 15,
+                  fontWeight: 600,
+                  marginBottom: 4,
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                  color: "#fdf7ff",
+                }}
+              >
+                {item.title || "(제목 없음)"}
+              </div>
+              <div style={{ fontSize: 12, color: "#cbb8ff" }}>
+                코드: <code>{item.ref_code}</code>
+              </div>
+            </div>
+
+            {/* 조회수 / Hop */}
+            <div
+              style={{
+                textAlign: "right",
+                fontSize: 12,
+                color: "#e2d8ff",
+                minWidth: 80,
+              }}
+            >
+              <div>
+                <strong>Views</strong> {item.views ?? 0}
+              </div>
+              <div
+                style={
+                  showHopHighlight
+                    ? { fontWeight: 700, color: "#ffe48a" }
+                    : undefined
+                }
+              >
+                <strong>Hop</strong> {item.hop ?? 0}
+              </div>
+            </div>
+          </Link>
+        </li>
+      ))}
+    </ol>
   );
 }
-
-
