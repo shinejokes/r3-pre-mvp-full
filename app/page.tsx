@@ -122,7 +122,7 @@ export default async function HomePage() {
         {/* 1. 오늘의 Top 5 (누적 조회수, 콘텐츠별) */}
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
-            오늘의 Top 5 (누적 조회수, 콘텐츠별)
+            오늘의 Top Views 5 (누적 조회수)
           </h2>
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
             Supabase <code>r3_shares</code> 테이블의 <code>views</code> 값을
@@ -194,7 +194,7 @@ export default async function HomePage() {
         {/* 3. 최고 Hop Top5 (테이블 스타일로 통일) */}
         <section>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
-            최고 Hop Top 5 (네트워크 깊이)
+            오늘의 Top Hop 5 (네트워크 깊이)
           </h2>
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
             각 공유 링크의 <code>hop</code> 값을 기준으로,
