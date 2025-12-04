@@ -35,8 +35,7 @@ export default async function HomePage() {
   const globalTop: TopShare[] = topSharesAll ?? [];
 
   // ----------------------------
-  // 2) 오늘의 Top5 (임시 Rider Top5)
-  //    (지금은 화면에 쓰지 않고, 나중에 Rider 랭킹 만들 때 활용 예정)
+  // 2) 오늘의 Top5 (임시 Rider Top5 – 지금은 안 씀, 나중용)
   // ----------------------------
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -110,9 +109,8 @@ export default async function HomePage() {
               flexWrap: "wrap",
             }}
           >
-            {/* 실제 존재하는 페이지 경로에 맞게 수정해서 사용 */}
             <Link
-              href="/create" // 내 링크 만들기 페이지 경로 (/create, /r 등 실제 경로로 조정)
+              href="/create"
               style={{
                 padding: "8px 14px",
                 borderRadius: 999,
@@ -126,7 +124,7 @@ export default async function HomePage() {
               내 링크 만들기
             </Link>
             <Link
-              href="/lab" // 전체 실험 / 실험실 페이지 경로
+              href="/lab"
               style={{
                 padding: "8px 14px",
                 borderRadius: 999,
@@ -167,8 +165,8 @@ export default async function HomePage() {
               style={{
                 overflowX: "auto",
                 borderRadius: 16,
-                boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
-                backgroundColor: "rgba(255,255,255,0.96)",
+                boxShadow: "0 0 0 1px rgba(249,242,255,0.18)",
+                backgroundColor: "transparent",
               }}
             >
               <table
@@ -176,7 +174,8 @@ export default async function HomePage() {
                   width: "100%",
                   borderCollapse: "collapse",
                   fontSize: 14,
-                  color: "#1b0033",
+                  color: "#f9f2ff",
+                  backgroundColor: "transparent",
                 }}
               >
                 <thead>
@@ -187,9 +186,8 @@ export default async function HomePage() {
                           key={label}
                           style={{
                             padding: "10px 12px",
-                            border: "1px solid rgba(75,0,120,0.25)",
-                            background:
-                              "linear-gradient(180deg, #f4e9ff 0%, #e5d5ff 100%)",
+                            border: "1px solid rgba(249,242,255,0.35)",
+                            backgroundColor: "rgba(5,0,25,0.95)",
                             textAlign: "left",
                             fontWeight: 700,
                             whiteSpace: "nowrap",
@@ -208,15 +206,15 @@ export default async function HomePage() {
                       style={{
                         backgroundColor:
                           index % 2 === 0
-                            ? "rgba(250,244,255,0.95)"
-                            : "rgba(255,255,255,0.95)",
+                            ? "rgba(255,255,255,0.02)"
+                            : "rgba(255,255,255,0.05)",
                       }}
                     >
                       {/* 순위 */}
                       <td
                         style={{
                           padding: "8px 12px",
-                          border: "1px solid rgba(75,0,120,0.15)",
+                          border: "1px solid rgba(249,242,255,0.25)",
                           textAlign: "center",
                         }}
                       >
@@ -227,7 +225,7 @@ export default async function HomePage() {
                       <td
                         style={{
                           padding: "8px 12px",
-                          border: "1px solid rgba(75,0,120,0.15)",
+                          border: "1px solid rgba(249,242,255,0.25)",
                           maxWidth: 260,
                           textOverflow: "ellipsis",
                           overflow: "hidden",
@@ -240,7 +238,7 @@ export default async function HomePage() {
                           href={`/r/${item.ref_code}`}
                           style={{
                             textDecoration: "none",
-                            color: "#2b0060",
+                            color: "#ffe8ff",
                           }}
                         >
                           {item.title || "(제목 없음)"}
@@ -251,17 +249,17 @@ export default async function HomePage() {
                       <td
                         style={{
                           padding: "8px 12px",
-                          border: "1px solid rgba(75,0,120,0.15)",
+                          border: "1px solid rgba(249,242,255,0.25)",
                         }}
                       >
-                        {/* TODO: 나중에 rider_id / user_id 컬럼 연결 */}
+                        {/* TODO: rider_id / user_id 연결 */}
                       </td>
 
-                      {/* 원본 URL – 현재는 shares 테이블에서 직접 가져오지 못하므로 임시로 '-' */}
+                      {/* 원본 URL – 지금은 '-' */}
                       <td
                         style={{
                           padding: "8px 12px",
-                          border: "1px solid rgba(75,0,120,0.15)",
+                          border: "1px solid rgba(249,242,255,0.25)",
                           maxWidth: 260,
                           textOverflow: "ellipsis",
                           overflow: "hidden",
@@ -276,7 +274,7 @@ export default async function HomePage() {
                       <td
                         style={{
                           padding: "8px 12px",
-                          border: "1px solid rgba(75,0,120,0.15)",
+                          border: "1px solid rgba(249,242,255,0.25)",
                           textAlign: "right",
                         }}
                       >
@@ -287,7 +285,7 @@ export default async function HomePage() {
                       <td
                         style={{
                           padding: "8px 12px",
-                          border: "1px solid rgba(75,0,120,0.15)",
+                          border: "1px solid rgba(249,242,255,0.25)",
                           textAlign: "right",
                         }}
                       >
@@ -301,7 +299,7 @@ export default async function HomePage() {
           )}
         </section>
 
-        {/* 2. 최고 Hop Top5 */}
+        {/* 2. 최고 Hop Top5 (기존 스타일 유지) */}
         <section>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
             최고 Hop Top 5 (네트워크 깊이)
