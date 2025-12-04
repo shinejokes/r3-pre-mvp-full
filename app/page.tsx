@@ -204,7 +204,7 @@ export default async function HomePage() {
           )}
         </section>
 
-        {/* 3. 최고 Hop Top5 (리스트 스타일) */}
+        {/* 3. 최고 Hop Top5 (테이블 스타일로 통일) */}
         <section>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
             최고 Hop Top 5 (네트워크 깊이)
@@ -212,7 +212,8 @@ export default async function HomePage() {
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
             각 공유 링크의 <code>hop</code> 값을 기준으로,
             <br />
-            네트워크를 가장 깊게 파고든 링크 상위 5개를 보여줍니다.{" "}
+            네트워크를 가장 깊게 파고든 링크 상위 5개를{" "}
+            <strong>테이블 형태</strong>로 보여줍니다.{" "}
             <strong>Views</strong>로 동률을 정리합니다.
           </p>
 
@@ -223,7 +224,18 @@ export default async function HomePage() {
               링크가 중간 전달자들을 거치면 Hop 값이 증가합니다.
             </EmptyCard>
           ) : (
-            <RankedList items={hopTop} showHopHighlight />
+            <RankingTable
+              items={hopTop}
+              headerLabels={[
+                "순위",
+                "제목",
+                "사용자 ID",
+                "원본 URL",
+                "Views",
+                "Hop",
+              ]}
+              viewsLabel="Views"
+            />
           )}
         </section>
 
@@ -265,13 +277,13 @@ function EmptyCard(props: { children: ReactNode }) {
   );
 }
 
-/** 공통 테이블 (Top Views / Top Rider 모두 여기 사용) */
+/** 공통 테이블 (Top Views / Top Rider / Hop Top 모두 여기 사용) */
 function RankingTable(props: {
   items: TopShare[];
   headerLabels: string[];
-  viewsLabel: string; // "Views" 또는 "My Views"
+  viewsLabel: string; // "Views" 또는 "My Views" (지금은 헤더 텍스트로 직접 씀)
 }) {
-  const { items, headerLabels, viewsLabel } = props;
+  const { items, headerLabels } = props;
 
   return (
     <div
@@ -363,7 +375,7 @@ function RankingTable(props: {
                   border: "1px solid rgba(249,242,255,0.25)",
                 }}
               >
-                {/* TODO: 나중에 rider_id / user_id 연결 */}
+                {/* TODO: rider_id / user_id 연결 */}
               </td>
 
               {/* 원본 URL – 지금은 '-' */}
@@ -410,6 +422,7 @@ function RankingTable(props: {
   );
 }
 
+/* RankedList는 지금은 쓰지 않지만, 나중을 위해 남겨 둠 */
 function RankedList(props: { items: TopShare[]; showHopHighlight?: boolean }) {
   const { items, showHopHighlight } = props;
 
@@ -439,7 +452,6 @@ function RankedList(props: { items: TopShare[]; showHopHighlight?: boolean }) {
               background: "rgba(10,0,40,0.6)",
             }}
           >
-            {/* 순위 동그라미 */}
             <div
               style={{
                 width: 28,
@@ -461,7 +473,6 @@ function RankedList(props: { items: TopShare[]; showHopHighlight?: boolean }) {
               {index + 1}
             </div>
 
-            {/* 제목 + 코드 */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
@@ -481,7 +492,6 @@ function RankedList(props: { items: TopShare[]; showHopHighlight?: boolean }) {
               </div>
             </div>
 
-            {/* 조회수 / Hop */}
             <div
               style={{
                 textAlign: "right",
