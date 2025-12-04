@@ -115,20 +115,7 @@ export default async function HomePage() {
             >
               내 링크 만들기
             </Link>
-            <Link
-              href="/lab"
-              style={{
-                padding: "8px 14px",
-                borderRadius: 999,
-                border: "1px solid rgba(255,255,255,0.6)",
-                fontSize: 14,
-                textDecoration: "none",
-                color: "#f9f2ff",
-                backgroundColor: "transparent",
-              }}
-            >
-              전체 실험 보기
-            </Link>
+            {/* 전체 실험 보기 버튼은 당분간 숨김 */}
           </div>
         </header>
 
@@ -312,7 +299,7 @@ function RankingTable(props: {
                   padding: "10px 12px",
                   border: "1px solid rgba(249,242,255,0.35)",
                   backgroundColor: "rgba(5,0,25,0.95)",
-                  textAlign: "left",
+                  textAlign: "center", // 가운데 정렬
                   fontWeight: 700,
                   whiteSpace: "nowrap",
                 }}
@@ -354,6 +341,7 @@ function RankingTable(props: {
                   overflow: "hidden",
                   whiteSpace: "nowrap",
                   fontWeight: 500,
+                  textAlign: "center", // 가운데
                 }}
                 title={item.title ?? undefined}
               >
@@ -373,6 +361,7 @@ function RankingTable(props: {
                 style={{
                   padding: "8px 12px",
                   border: "1px solid rgba(249,242,255,0.25)",
+                  textAlign: "center",
                 }}
               >
                 {/* TODO: rider_id / user_id 연결 */}
@@ -387,6 +376,7 @@ function RankingTable(props: {
                   textOverflow: "ellipsis",
                   overflow: "hidden",
                   whiteSpace: "nowrap",
+                  textAlign: "center",
                 }}
                 title="-"
               >
@@ -398,7 +388,7 @@ function RankingTable(props: {
                 style={{
                   padding: "8px 12px",
                   border: "1px solid rgba(249,242,255,0.25)",
-                  textAlign: "right",
+                  textAlign: "center", // 오른쪽 → 가운데
                 }}
               >
                 {item.views ?? 0}
@@ -409,7 +399,7 @@ function RankingTable(props: {
                 style={{
                   padding: "8px 12px",
                   border: "1px solid rgba(249,242,255,0.25)",
-                  textAlign: "right",
+                  textAlign: "center", // 오른쪽 → 가운데
                 }}
               >
                 {item.hop ?? 0}
