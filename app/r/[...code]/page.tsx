@@ -160,19 +160,6 @@ export default async function ShareRedirectPage({ params }: PageProps) {
         color: "white",
       }}
     >
-      {/* 🔽 홈으로 링크 추가 */}
-      <div style={{ padding: "12px 16px", marginBottom: 8 }}>
-        <Link
-          href="/"
-          style={{
-            fontSize: 13,
-            color: "#e5e7eb",
-            textDecoration: "none",
-          }}
-        >
-          ← R3 실험 홈으로
-        </Link>
-      </div>
       {/* 🔼 */}
 
       {/* 기존 화면 전체는 그대로 RedirectScreen에서 렌더링 */}

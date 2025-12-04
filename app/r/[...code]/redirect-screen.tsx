@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 type ShareRow = {
   ref_code: string;
@@ -112,29 +113,54 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           boxShadow: "0 18px 40px rgba(0,0,0,0.4)",
         }}
       >
-        {/* 상단: 제목 */}
-        <div style={{ marginBottom: 16 }}>
-          <div
-            style={{
-              fontSize: 14,
-              letterSpacing: 4,
-              textTransform: "uppercase",
-              color: "#9ca3af",
-              marginBottom: 6,
-            }}
-          >
-            R³ · HAND-FORWARDED LINK
-          </div>
-          <div
-            style={{
-              fontSize: 24,
-              fontWeight: 700,
-              lineHeight: 1.3,
-            }}
-          >
-            {safeTitle}
-          </div>
-        </div>
+     {/* 상단: 제목 + 홈 링크 */}
+<div style={{ marginBottom: 16 }}>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "flex-end",
+      gap: 12,
+      marginBottom: 4,
+    }}
+  >
+    <div>
+      <div
+        style={{
+          fontSize: 14,
+          letterSpacing: 4,
+          textTransform: "uppercase",
+          color: "#9ca3af",
+          marginBottom: 6,
+        }}
+      >
+        R³ · HAND-FORWARDED LINK
+      </div>
+      <div
+        style={{
+          fontSize: 24,
+          fontWeight: 700,
+          lineHeight: 1.3,
+        }}
+      >
+        {safeTitle}
+      </div>
+    </div>
+
+    <Link
+      href="/"
+      style={{
+        fontSize: 12,
+        color: "#e5e7eb",
+        textDecoration: "none",
+        whiteSpace: "nowrap",
+      }}
+    >
+      ← R3 홈페이지(임시)로
+    </Link>
+  </div>
+</div>
+
 
         {/* 중단: R³ / Views / MV / Hop 배지 */}
         <div
