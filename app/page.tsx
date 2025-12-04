@@ -363,6 +363,29 @@ export default async function HomePage() {
             paddingTop: 12,
           }}
         >
-          R3 Demo · 실험용 버전 · Supabase + Next.js
+      R3 Demo · 실험용 버전 · Supabase + Next.js
         </footer>
-      <
+      </div>
+    </main>
+  );
+}
+
+
+
+// ------------------------
+// 재사용 UI 컴포넌트
+// ------------------------
+
+function EmptyCard(props: { children: React.ReactNode }) {
+  return (
+    <div> ... </div>
+  );
+}
+
+function RankedList(props: { items: TopShare[]; showHopHighlight?: boolean }) {
+  return (
+    <ol> ... </ol>
+  );
+}
+
+
