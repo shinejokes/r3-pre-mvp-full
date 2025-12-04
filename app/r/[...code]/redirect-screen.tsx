@@ -134,7 +134,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           marginBottom: 6,
         }}
       >
-        R³ · HAND-FORWARDED LINK
+        R³ · THE HUMAN NETWORK
       </div>
       <div
         style={{
@@ -156,7 +156,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         whiteSpace: "nowrap",
       }}
     >
-      ← R3 홈페이지(임시)로
+      ← R3 홈페이지(임시)로  
     </Link>
   </div>
 </div>
@@ -213,7 +213,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
               backgroundColor: "rgba(5,46,22,0.9)",
             }}
           >
-            MV {myViews}
+            My Views {myViews}
           </div>
 
           {/* Hop */}
