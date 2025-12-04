@@ -19,9 +19,7 @@ export const revalidate = 60;
 export default async function HomePage() {
   const supabase = supabaseServer();
 
-  // ----------------------------
   // 1) 전체 기준 Top5 (콘텐츠별 누적 조회수)
-  // ----------------------------
   const { data: topSharesAll, error: errAll } = await supabase
     .from("r3_shares")
     .select("id, ref_code, title, views, hop, created_at")
@@ -34,9 +32,7 @@ export default async function HomePage() {
 
   const globalTop: TopShare[] = topSharesAll ?? [];
 
-  // ----------------------------
-  // 2) 오늘의 Top5 (임시 Rider Top5 – 지금은 안 씀, 나중용)
-  // ----------------------------
+  // 2) 오늘의 Top5 (임시 Rider Top5 – 오늘 0시 이후 생성된 링크 기준)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayISO = today.toISOString();
@@ -54,9 +50,7 @@ export default async function HomePage() {
 
   const todayTop: TopShare[] = todaySharesRaw ?? [];
 
-  // ----------------------------
   // 3) 최고 Hop Top5
-  // ----------------------------
   const { data: hopShares, error: errHop } = await supabase
     .from("r3_shares")
     .select("id, ref_code, title, views, hop, created_at")
@@ -70,9 +64,7 @@ export default async function HomePage() {
 
   const hopTop: TopShare[] = hopShares ?? [];
 
-  // ----------------------------
   // UI
-  // ----------------------------
   return (
     <main
       style={{
@@ -140,7 +132,7 @@ export default async function HomePage() {
           </div>
         </header>
 
-        {/* 1. 오늘의 Top 5 (엑셀 테이블 형태, 콘텐츠별 누적 조회수) */}
+        {/* 1. 오늘의 Top 5 (누적 조회수, 콘텐츠별) */}
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
             오늘의 Top 5 (누적 조회수, 콘텐츠별)
@@ -161,145 +153,58 @@ export default async function HomePage() {
               방에 공유해 보세요.
             </EmptyCard>
           ) : (
-            <div
-              style={{
-                overflowX: "auto",
-                borderRadius: 16,
-                boxShadow: "0 0 0 1px rgba(249,242,255,0.18)",
-                backgroundColor: "transparent",
-              }}
-            >
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  fontSize: 14,
-                  color: "#f9f2ff",
-                  backgroundColor: "transparent",
-                }}
-              >
-                <thead>
-                  <tr>
-                    {["순위", "제목", "사용자 ID", "원본 URL", "Views", "Hop"].map(
-                      (label) => (
-                        <th
-                          key={label}
-                          style={{
-                            padding: "10px 12px",
-                            border: "1px solid rgba(249,242,255,0.35)",
-                            backgroundColor: "rgba(5,0,25,0.95)",
-                            textAlign: "left",
-                            fontWeight: 700,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {label}
-                        </th>
-                      )
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {globalTop.map((item, index) => (
-                    <tr
-                      key={item.id}
-                      style={{
-                        backgroundColor:
-                          index % 2 === 0
-                            ? "rgba(255,255,255,0.02)"
-                            : "rgba(255,255,255,0.05)",
-                      }}
-                    >
-                      {/* 순위 */}
-                      <td
-                        style={{
-                          padding: "8px 12px",
-                          border: "1px solid rgba(249,242,255,0.25)",
-                          textAlign: "center",
-                        }}
-                      >
-                        {index + 1}
-                      </td>
-
-                      {/* 제목 (중간 링크로 연결) */}
-                      <td
-                        style={{
-                          padding: "8px 12px",
-                          border: "1px solid rgba(249,242,255,0.25)",
-                          maxWidth: 260,
-                          textOverflow: "ellipsis",
-                          overflow: "hidden",
-                          whiteSpace: "nowrap",
-                          fontWeight: 500,
-                        }}
-                        title={item.title ?? undefined}
-                      >
-                        <Link
-                          href={`/r/${item.ref_code}`}
-                          style={{
-                            textDecoration: "none",
-                            color: "#ffe8ff",
-                          }}
-                        >
-                          {item.title || "(제목 없음)"}
-                        </Link>
-                      </td>
-
-                      {/* 사용자 ID – 아직 없으므로 빈칸 */}
-                      <td
-                        style={{
-                          padding: "8px 12px",
-                          border: "1px solid rgba(249,242,255,0.25)",
-                        }}
-                      >
-                        {/* TODO: rider_id / user_id 연결 */}
-                      </td>
-
-                      {/* 원본 URL – 지금은 '-' */}
-                      <td
-                        style={{
-                          padding: "8px 12px",
-                          border: "1px solid rgba(249,242,255,0.25)",
-                          maxWidth: 260,
-                          textOverflow: "ellipsis",
-                          overflow: "hidden",
-                          whiteSpace: "nowrap",
-                        }}
-                        title="-"
-                      >
-                        -
-                      </td>
-
-                      {/* Views */}
-                      <td
-                        style={{
-                          padding: "8px 12px",
-                          border: "1px solid rgba(249,242,255,0.25)",
-                          textAlign: "right",
-                        }}
-                      >
-                        {item.views ?? 0}
-                      </td>
-
-                      {/* Hop */}
-                      <td
-                        style={{
-                          padding: "8px 12px",
-                          border: "1px solid rgba(249,242,255,0.25)",
-                          textAlign: "right",
-                        }}
-                      >
-                        {item.hop ?? 0}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <RankingTable
+              items={globalTop}
+              headerLabels={[
+                "순위",
+                "제목",
+                "사용자 ID",
+                "원본 URL",
+                "Views",
+                "Hop",
+              ]}
+              viewsLabel="Views"
+            />
           )}
         </section>
 
-        {/* 2. 최고 Hop Top5 (기존 스타일 유지) */}
+        {/* 2. 오늘의 Top Rider 5 (My Views 기준) */}
+        <section style={{ marginBottom: 32 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
+            오늘의 Top Rider 5 (임시)
+          </h2>
+          <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
+            오늘 0시 이후에 생성된 중간 링크들 중에서{" "}
+            <code>views</code> 값이 큰 상위 5개를{" "}
+            <strong>Rider 관점의 임시 랭킹</strong>으로 보여줍니다.
+            <br />
+            여기서 <strong>My Views</strong>는 해당 Rider가 만든 링크에 기록된
+            조회수입니다.
+          </p>
+
+          {todayTop.length === 0 ? (
+            <EmptyCard>
+              오늘 새로 생성된 중간 링크가 아직 없습니다.
+              <br />
+              오늘 만든 링크가 있다면, 잠시 후 여기 Top Rider 5에 나타납니다.
+            </EmptyCard>
+          ) : (
+            <RankingTable
+              items={todayTop}
+              headerLabels={[
+                "순위",
+                "제목",
+                "사용자 ID",
+                "원본 URL",
+                "My Views",
+                "Hop",
+              ]}
+              viewsLabel="My Views"
+            />
+          )}
+        </section>
+
+        {/* 3. 최고 Hop Top5 (리스트 스타일) */}
         <section>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
             최고 Hop Top 5 (네트워크 깊이)
@@ -356,6 +261,151 @@ function EmptyCard(props: { children: ReactNode }) {
       }}
     >
       {props.children}
+    </div>
+  );
+}
+
+/** 공통 테이블 (Top Views / Top Rider 모두 여기 사용) */
+function RankingTable(props: {
+  items: TopShare[];
+  headerLabels: string[];
+  viewsLabel: string; // "Views" 또는 "My Views"
+}) {
+  const { items, headerLabels, viewsLabel } = props;
+
+  return (
+    <div
+      style={{
+        overflowX: "auto",
+        borderRadius: 16,
+        boxShadow: "0 0 0 1px rgba(249,242,255,0.18)",
+        backgroundColor: "transparent",
+      }}
+    >
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          fontSize: 14,
+          color: "#f9f2ff",
+          backgroundColor: "transparent",
+        }}
+      >
+        <thead>
+          <tr>
+            {headerLabels.map((label) => (
+              <th
+                key={label}
+                style={{
+                  padding: "10px 12px",
+                  border: "1px solid rgba(249,242,255,0.35)",
+                  backgroundColor: "rgba(5,0,25,0.95)",
+                  textAlign: "left",
+                  fontWeight: 700,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, index) => (
+            <tr
+              key={item.id}
+              style={{
+                backgroundColor:
+                  index % 2 === 0
+                    ? "rgba(255,255,255,0.02)"
+                    : "rgba(255,255,255,0.05)",
+              }}
+            >
+              {/* 순위 */}
+              <td
+                style={{
+                  padding: "8px 12px",
+                  border: "1px solid rgba(249,242,255,0.25)",
+                  textAlign: "center",
+                }}
+              >
+                {index + 1}
+              </td>
+
+              {/* 제목 (중간 링크로 연결) */}
+              <td
+                style={{
+                  padding: "8px 12px",
+                  border: "1px solid rgba(249,242,255,0.25)",
+                  maxWidth: 260,
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  fontWeight: 500,
+                }}
+                title={item.title ?? undefined}
+              >
+                <Link
+                  href={`/r/${item.ref_code}`}
+                  style={{
+                    textDecoration: "none",
+                    color: "#ffe8ff",
+                  }}
+                >
+                  {item.title || "(제목 없음)"}
+                </Link>
+              </td>
+
+              {/* 사용자 ID – 아직 없으므로 빈칸 */}
+              <td
+                style={{
+                  padding: "8px 12px",
+                  border: "1px solid rgba(249,242,255,0.25)",
+                }}
+              >
+                {/* TODO: 나중에 rider_id / user_id 연결 */}
+              </td>
+
+              {/* 원본 URL – 지금은 '-' */}
+              <td
+                style={{
+                  padding: "8px 12px",
+                  border: "1px solid rgba(249,242,255,0.25)",
+                  maxWidth: 260,
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                }}
+                title="-"
+              >
+                -
+              </td>
+
+              {/* Views / My Views */}
+              <td
+                style={{
+                  padding: "8px 12px",
+                  border: "1px solid rgba(249,242,255,0.25)",
+                  textAlign: "right",
+                }}
+              >
+                {item.views ?? 0}
+              </td>
+
+              {/* Hop */}
+              <td
+                style={{
+                  padding: "8px 12px",
+                  border: "1px solid rgba(249,242,255,0.25)",
+                  textAlign: "right",
+                }}
+              >
+                {item.hop ?? 0}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
