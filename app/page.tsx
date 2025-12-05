@@ -8,6 +8,7 @@ type TopShare = {
   id: number;
   ref_code: string;
   title: string | null;
+  original_url: string | null;
   views: number | null;
   hop: number | null;
   created_at: string;
@@ -19,10 +20,12 @@ export const revalidate = 60;
 export default async function HomePage() {
   const supabase = supabaseServer();
 
-  // 1) 전체 기준 Top5 (콘텐츠별 누적 조회수)
+  // 1) 전체 기준 Top Views 5
   const { data: topSharesAll, error: errAll } = await supabase
     .from("r3_shares")
-    .select("id, ref_code, title, views, hop, created_at")
+    .select(
+      "id, ref_code, title, original_url, views, hop, created_at"
+    )
     .order("views", { ascending: false })
     .limit(5);
 
@@ -32,14 +35,16 @@ export default async function HomePage() {
 
   const globalTop: TopShare[] = topSharesAll ?? [];
 
-  // 2) 오늘의 Top5 (임시 Rider Top5 – 오늘 0시 이후 생성된 링크 기준)
+  // 2) 오늘의 Top Rider 5 (오늘 0시 이후 생성된 링크 기준)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayISO = today.toISOString();
 
   const { data: todaySharesRaw, error: errToday } = await supabase
     .from("r3_shares")
-    .select("id, ref_code, title, views, hop, created_at")
+    .select(
+      "id, ref_code, title, original_url, views, hop, created_at"
+    )
     .gte("created_at", todayISO)
     .order("views", { ascending: false })
     .limit(5);
@@ -53,7 +58,9 @@ export default async function HomePage() {
   // 3) 최고 Hop Top5
   const { data: hopShares, error: errHop } = await supabase
     .from("r3_shares")
-    .select("id, ref_code, title, views, hop, created_at")
+    .select(
+      "id, ref_code, title, original_url, views, hop, created_at"
+    )
     .order("hop", { ascending: false })
     .order("views", { ascending: false })
     .limit(5);
@@ -64,7 +71,6 @@ export default async function HomePage() {
 
   const hopTop: TopShare[] = hopShares ?? [];
 
-  // UI
   return (
     <main
       style={{
@@ -81,7 +87,7 @@ export default async function HomePage() {
       }}
     >
       <div style={{ width: "100%", maxWidth: 960 }}>
-        {/* 헤더 영역 */}
+        {/* 헤더 */}
         <header style={{ marginBottom: 32 }}>
           <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>
             R3 실험 홈
@@ -115,11 +121,10 @@ export default async function HomePage() {
             >
               내 링크 만들기
             </Link>
-            {/* 전체 실험 보기 버튼은 당분간 숨김 */}
           </div>
         </header>
 
-        {/* 1. 오늘의 Top 5 (누적 조회수, 콘텐츠별) */}
+        {/* 1. 오늘의 Top Views 5 */}
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
             오늘의 Top Views 5 (누적 조회수)
@@ -150,12 +155,11 @@ export default async function HomePage() {
                 "Views",
                 "Hop",
               ]}
-              viewsLabel="Views"
             />
           )}
         </section>
 
-        {/* 2. 오늘의 Top Rider 5 (My Views 기준) */}
+        {/* 2. 오늘의 Top Rider 5 */}
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
             오늘의 Top Rider 5 (임시)
@@ -186,22 +190,20 @@ export default async function HomePage() {
                 "My Views",
                 "Hop",
               ]}
-              viewsLabel="My Views"
             />
           )}
         </section>
 
-        {/* 3. 최고 Hop Top5 (테이블 스타일로 통일) */}
+        {/* 3. 최고 Hop Top5 */}
         <section>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
-            오늘의 Top Hop 5 (네트워크 깊이)
+            최고 Hop Top 5 (네트워크 깊이)
           </h2>
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
             각 공유 링크의 <code>hop</code> 값을 기준으로,
             <br />
-            네트워크를 가장 깊게 파고든 링크 상위 5개를{" "}
-            <strong>테이블 형태</strong>로 보여줍니다.{" "}
-            <strong>Views</strong>로 동률을 정리합니다.
+            네트워크를 가장 깊게 파고든 링크 상위 5개를 테이블 형태로
+            보여줍니다. <strong>Views</strong>로 동률을 정리합니다.
           </p>
 
           {hopTop.length === 0 ? (
@@ -221,12 +223,10 @@ export default async function HomePage() {
                 "Views",
                 "Hop",
               ]}
-              viewsLabel="Views"
             />
           )}
         </section>
 
-        {/* 푸터 */}
         <footer
           style={{
             marginTop: 40,
@@ -242,10 +242,6 @@ export default async function HomePage() {
     </main>
   );
 }
-
-// ------------------------
-// 재사용 UI 컴포넌트
-// ------------------------
 
 function EmptyCard(props: { children: ReactNode }) {
   return (
@@ -264,11 +260,10 @@ function EmptyCard(props: { children: ReactNode }) {
   );
 }
 
-/** 공통 테이블 (Top Views / Top Rider / Hop Top 모두 여기 사용) */
+/** 공통 테이블 – 원본 URL까지 포함해서 렌더링 */
 function RankingTable(props: {
   items: TopShare[];
   headerLabels: string[];
-  viewsLabel: string; // "Views" 또는 "My Views" (지금은 헤더 텍스트로 직접 씀)
 }) {
   const { items, headerLabels } = props;
 
@@ -299,7 +294,7 @@ function RankingTable(props: {
                   padding: "10px 12px",
                   border: "1px solid rgba(249,242,255,0.35)",
                   backgroundColor: "rgba(5,0,25,0.95)",
-                  textAlign: "center", // 가운데 정렬
+                  textAlign: "center",
                   fontWeight: 700,
                   whiteSpace: "nowrap",
                 }}
@@ -331,7 +326,7 @@ function RankingTable(props: {
                 {index + 1}
               </td>
 
-              {/* 제목 (중간 링크로 연결) */}
+              {/* 제목 */}
               <td
                 style={{
                   padding: "8px 12px",
@@ -341,7 +336,7 @@ function RankingTable(props: {
                   overflow: "hidden",
                   whiteSpace: "nowrap",
                   fontWeight: 500,
-                  textAlign: "center", // 가운데
+                  textAlign: "center",
                 }}
                 title={item.title ?? undefined}
               >
@@ -356,18 +351,16 @@ function RankingTable(props: {
                 </Link>
               </td>
 
-              {/* 사용자 ID – 아직 없으므로 빈칸 */}
+              {/* 사용자 ID – 아직 없음 */}
               <td
                 style={{
                   padding: "8px 12px",
                   border: "1px solid rgba(249,242,255,0.25)",
                   textAlign: "center",
                 }}
-              >
-                {/* TODO: rider_id / user_id 연결 */}
-              </td>
+              />
 
-              {/* 원본 URL – 지금은 '-' */}
+              {/* 원본 URL */}
               <td
                 style={{
                   padding: "8px 12px",
@@ -378,9 +371,20 @@ function RankingTable(props: {
                   whiteSpace: "nowrap",
                   textAlign: "center",
                 }}
-                title="-"
+                title={item.original_url ?? undefined}
               >
-                -
+                {item.original_url ? (
+                  <a
+                    href={item.original_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#b3e6ff", textDecoration: "none" }}
+                  >
+                    {item.original_url}
+                  </a>
+                ) : (
+                  "-"
+                )}
               </td>
 
               {/* Views / My Views */}
@@ -388,7 +392,7 @@ function RankingTable(props: {
                 style={{
                   padding: "8px 12px",
                   border: "1px solid rgba(249,242,255,0.25)",
-                  textAlign: "center", // 오른쪽 → 가운데
+                  textAlign: "center",
                 }}
               >
                 {item.views ?? 0}
@@ -399,7 +403,7 @@ function RankingTable(props: {
                 style={{
                   padding: "8px 12px",
                   border: "1px solid rgba(249,242,255,0.25)",
-                  textAlign: "center", // 오른쪽 → 가운데
+                  textAlign: "center",
                 }}
               >
                 {item.hop ?? 0}
@@ -409,103 +413,5 @@ function RankingTable(props: {
         </tbody>
       </table>
     </div>
-  );
-}
-
-/* RankedList는 지금은 쓰지 않지만, 나중을 위해 남겨 둠 */
-function RankedList(props: { items: TopShare[]; showHopHighlight?: boolean }) {
-  const { items, showHopHighlight } = props;
-
-  return (
-    <ol
-      style={{
-        listStyle: "none",
-        margin: 0,
-        padding: 0,
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
-      {items.map((item, index) => (
-        <li key={item.id}>
-          <Link
-            href={`/r/${item.ref_code}`}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "10px 12px",
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.18)",
-              textDecoration: "none",
-              background: "rgba(10,0,40,0.6)",
-            }}
-          >
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                border: "1px solid rgba(255,255,255,0.4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 14,
-                fontWeight: 600,
-                background:
-                  index === 0
-                    ? "linear-gradient(135deg, #ffd86a, #ffb347)"
-                    : "rgba(255,255,255,0.08)",
-                color: index === 0 ? "#3b2200" : "#f9f2ff",
-              }}
-            >
-              {index + 1}
-            </div>
-
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 15,
-                  fontWeight: 600,
-                  marginBottom: 4,
-                  whiteSpace: "nowrap",
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  color: "#fdf7ff",
-                }}
-              >
-                {item.title || "(제목 없음)"}
-              </div>
-              <div style={{ fontSize: 12, color: "#cbb8ff" }}>
-                코드: <code>{item.ref_code}</code>
-              </div>
-            </div>
-
-            <div
-              style={{
-                textAlign: "right",
-                fontSize: 12,
-                color: "#e2d8ff",
-                minWidth: 80,
-              }}
-            >
-              <div>
-                <strong>Views</strong> {item.views ?? 0}
-              </div>
-              <div
-                style={
-                  showHopHighlight
-                    ? { fontWeight: 700, color: "#ffe48a" }
-                    : undefined
-                }
-              >
-                <strong>Hop</strong> {item.hop ?? 0}
-              </div>
-            </div>
-          </Link>
-        </li>
-      ))}
-    </ol>
   );
 }

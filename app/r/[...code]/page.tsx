@@ -11,10 +11,9 @@ type ShareRow = {
   title: string | null;
   target_url: string | null;
   original_url: string | null;
-  views: number | null;     // 전체 조회수 (Original Total Views)
+  views: number | null; // 이 링크의 R3 조회수
   hop: number | null;
   message_id: string | null;
-  self_views?: number | null; // 내 링크 조회수 (MV)
 };
 
 interface PageParams {
@@ -29,11 +28,12 @@ function extractRefCode(code: string[] | string): string {
   return Array.isArray(code) ? code[0] : code;
 }
 
-
 /* ---------------------------------------------
    1) OG IMAGE META
 --------------------------------------------- */
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const resolved = await params;
   const refCode = extractRefCode(resolved.code);
 
@@ -59,7 +59,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-
 /* ---------------------------------------------
    2) MAIN PAGE LOGIC
 --------------------------------------------- */
@@ -72,7 +71,9 @@ export default async function ShareRedirectPage({ params }: PageProps) {
   /* -- 공유 정보 불러오기 -- */
   const { data, error } = await supabase
     .from("r3_shares")
-    .select("ref_code, title, target_url, original_url, views, hop, message_id")
+    .select(
+      "ref_code, title, target_url, original_url, views, hop, message_id"
+    )
     .eq("ref_code", refCode)
     .maybeSingle<ShareRow>();
 
@@ -86,7 +87,6 @@ export default async function ShareRedirectPage({ params }: PageProps) {
           padding: "12px 16px",
         }}
       >
-        {/* 🔽 홈으로 링크 추가 */}
         <div style={{ marginBottom: 16 }}>
           <Link
             href="/"
@@ -99,8 +99,6 @@ export default async function ShareRedirectPage({ params }: PageProps) {
             ← R3 실험 홈으로
           </Link>
         </div>
-        {/* 🔼 */}
-
         <h1>유효하지 않은 링크입니다.</h1>
       </div>
     );
@@ -109,47 +107,32 @@ export default async function ShareRedirectPage({ params }: PageProps) {
   /* ---------------------------------------------
      2-1) r3_hits 클릭 로그 기록
   --------------------------------------------- */
-  const hitPayload: { share_id: string; message_id?: string } = { share_id: refCode };
+  const hitPayload: { share_id: string; message_id?: string } = {
+    share_id: refCode,
+  };
   if (data.message_id) hitPayload.message_id = data.message_id;
 
   await supabase.from("r3_hits").insert(hitPayload);
 
-
   /* ---------------------------------------------
-     2-2) 내 링크의 조회수 (MV) 계산 = 기존 views + 1
+     2-2) 이 링크의 조회수 업데이트 (views = views + 1)
   --------------------------------------------- */
   const currentViews = data.views ?? 0;
+  const newViews = currentViews + 1;
 
   const { error: updateError } = await supabase
     .from("r3_shares")
-    .update({ views: currentViews + 1 })
+    .update({ views: newViews })
     .eq("ref_code", refCode);
 
-  const selfViews = updateError ? currentViews : currentViews + 1;
-
-
-  /* ---------------------------------------------
-     2-3) message_id 기준 전체 조회수 (Original Total Views)
-  --------------------------------------------- */
-  let totalViews = 0;
-
-  if (data.message_id) {
-    const { count } = await supabase
-      .from("r3_hits")
-      .select("id", { count: "exact", head: true })
-      .eq("message_id", data.message_id);
-
-    totalViews = count ?? 0;
-  }
-
+  const finalViews = updateError ? currentViews : newViews;
 
   /* ---------------------------------------------
-     2-4) 최종 전달할 데이터 구조
+     2-3) 화면에 넘겨줄 데이터
   --------------------------------------------- */
   const shareForScreen: ShareRow = {
     ...data,
-    views: totalViews,    // 전체 조회수
-    self_views: selfViews, // 내 링크 조회수
+    views: finalViews,
   };
 
   return (
@@ -160,9 +143,6 @@ export default async function ShareRedirectPage({ params }: PageProps) {
         color: "white",
       }}
     >
-      {/* 🔼 */}
-
-      {/* 기존 화면 전체는 그대로 RedirectScreen에서 렌더링 */}
       <RedirectScreen share={shareForScreen} />
     </div>
   );
