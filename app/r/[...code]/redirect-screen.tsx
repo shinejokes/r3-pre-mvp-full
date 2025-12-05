@@ -156,7 +156,8 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         whiteSpace: "nowrap",
       }}
     >
-      ← R3 홈페이지(임시)로  
+     R3 홈페이지로 →
+  
     </Link>
   </div>
 </div>
