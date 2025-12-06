@@ -37,9 +37,6 @@ function extractRefCode(code: string[] | string): string {
 --------------------------------------------- */
 // app/r/[code]/page.tsx 중 일부
 
-import type { Metadata } from "next";
-import { supabaseServer } from "../../../lib/supabaseServer";
-
 type Props = {
   params: { code: string };
 };
