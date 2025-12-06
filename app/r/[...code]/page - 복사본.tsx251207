@@ -11,9 +11,13 @@ type ShareRow = {
   title: string | null;
   target_url: string | null;
   original_url: string | null;
-  views: number | null; // 이 링크의 R3 조회수
+  views: number | null;        // 이 링크의 조회수 또는 전체 조회수(아래서 덮어씀)
   hop: number | null;
   message_id: string | null;
+
+  // RedirectScreen에서 쓸 수 있도록 추가 필드
+  myViews?: number | null;     // 이 링크(My R³ 링크)의 조회수
+  totalViews?: number | null;  // 같은 message_id 묶음의 총 조회수
 };
 
 interface PageParams {
@@ -68,7 +72,7 @@ export default async function ShareRedirectPage({ params }: PageProps) {
 
   const supabase = supabaseServer();
 
-  /* -- 공유 정보 불러오기 -- */
+  // 2-1. 해당 공유 링크 정보 읽기
   const { data, error } = await supabase
     .from("r3_shares")
     .select(
@@ -104,9 +108,7 @@ export default async function ShareRedirectPage({ params }: PageProps) {
     );
   }
 
-  /* ---------------------------------------------
-     2-1) r3_hits 클릭 로그 기록
-  --------------------------------------------- */
+  // 2-2. r3_hits 클릭 로그 남기기
   const hitPayload: { share_id: string; message_id?: string } = {
     share_id: refCode,
   };
@@ -114,25 +116,44 @@ export default async function ShareRedirectPage({ params }: PageProps) {
 
   await supabase.from("r3_hits").insert(hitPayload);
 
-  /* ---------------------------------------------
-     2-2) 이 링크의 조회수 업데이트 (views = views + 1)
-  --------------------------------------------- */
+  // 2-3. 이 링크의 조회수(My Views) 업데이트: views = views + 1
   const currentViews = data.views ?? 0;
-  const newViews = currentViews + 1;
+  const myViews = currentViews + 1;
+
+  let finalMyViews = currentViews;
 
   const { error: updateError } = await supabase
     .from("r3_shares")
-    .update({ views: newViews })
+    .update({ views: myViews })
     .eq("ref_code", refCode);
 
-  const finalViews = updateError ? currentViews : newViews;
+  if (!updateError) {
+    finalMyViews = myViews;
+  }
 
-  /* ---------------------------------------------
-     2-3) 화면에 넘겨줄 데이터
-  --------------------------------------------- */
+  // 2-4. 같은 message_id를 가진 모든 share의 views를 합쳐서 totalViews 계산
+  let totalViews = finalMyViews;
+
+  if (data.message_id) {
+    const { data: siblings, error: sumError } = await supabase
+      .from("r3_shares")
+      .select("views")
+      .eq("message_id", data.message_id);
+
+    if (!sumError && siblings) {
+      totalViews = siblings.reduce(
+        (sum, row) => sum + (row.views ?? 0),
+        0
+      );
+    }
+  }
+
+  // 2-5. RedirectScreen으로 넘길 객체 구성
   const shareForScreen: ShareRow = {
     ...data,
-    views: finalViews,
+    views: totalViews,       // "Views" 용
+    myViews: finalMyViews,   // "My Views" 용
+    totalViews: totalViews,  // 혹시 다른 이름을 쓴다면 대비용
   };
 
   return (

@@ -35,33 +35,53 @@ function extractRefCode(code: string[] | string): string {
 /* ---------------------------------------------
    1) OG IMAGE META
 --------------------------------------------- */
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
-  const resolved = await params;
-  const refCode = extractRefCode(resolved.code);
+// app/r/[code]/page.tsx 중 일부
 
-  const supabase = supabaseServer();
-  const { data } = await supabase
+import type { Metadata } from "next";
+import { supabaseServer } from "../../../lib/supabaseServer";
+
+type Props = {
+  params: { code: string };
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const refCode = params.code;
+
+  const { data } = await supabaseServer
     .from("r3_shares")
     .select("title")
     .eq("ref_code", refCode)
-    .maybeSingle();
+    .single();
 
-  const title = data?.title || "R³ Hand-Forwarded Link";
+  const title = data?.title ?? "R3 소개";
+  const description = "여기를 눌러 링크를 확인하세요.";
 
-  const base =
-    process.env.R3_APP_BASE_URL || "https://r3-pre-mvp-full.vercel.app";
-  const ogImageUrl = `${base}/api/ogimage?shareId=${refCode}`;
+  const baseUrl =
+    process.env.R3_APP_BASE_URL ?? "https://r3-pre-mvp-full.vercel.app";
+
+  const pageUrl = `${baseUrl}/r/${refCode}`;
+  const ogImageUrl = `${baseUrl}/api/ogimage?shareId=${refCode}`;
 
   return {
     title,
+    description,
     openGraph: {
       title,
-      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+      description,
+      url: pageUrl,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+        },
+      ],
     },
   };
 }
+
+// 아래 실제 페이지 컴포넌트 부분은 기존 그대로 두면 됩니다.
+
 
 /* ---------------------------------------------
    2) MAIN PAGE LOGIC
