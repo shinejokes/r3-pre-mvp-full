@@ -49,12 +49,16 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Supabase에서 해당 share 정보 가져오기
-  const { data, error } = await supabaseServer
-    .from("r3_shares")
-    .select("title, views, hop")
-    .eq("ref_code", shareId)
-    .single();
+ 
+// Supabase에서 해당 share 정보 가져오기
+const supabase = supabaseServer();
+
+const { data, error } = await supabase
+  .from("r3_shares")
+  .select("title, views, hop")
+  .eq("ref_code", shareId)
+  .maybeSingle();
+
 
   const title = (data?.title ?? "R3 링크").slice(0, 50); // 너무 길면 자르기
   const description = "여기를 눌러 링크를 확인하세요.";
