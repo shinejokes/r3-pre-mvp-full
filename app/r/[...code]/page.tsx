@@ -44,7 +44,9 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const refCode = params.code;
 
-  const { data } = await supabaseServer
+ const supabase = supabaseServer(); // ← 추가
+const { data } = await supabase    // ← 여기서 supabase 사용
+
     .from("r3_shares")
     .select("title")
     .eq("ref_code", refCode)
