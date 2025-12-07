@@ -59,7 +59,9 @@ const { data } = await supabase    // ← 여기서 supabase 사용
     process.env.R3_APP_BASE_URL ?? "https://r3-pre-mvp-full.vercel.app";
 
   const pageUrl = `${baseUrl}/r/${refCode}`;
-  const ogImageUrl = `${baseUrl}/api/ogimage?shareId=${refCode}`;
+  // const ogImageUrl = `${baseUrl}/api/ogimage?shareId=${refCode}`; 원래
+const ogImageUrl = `${baseUrl}/api/ogimage?shareId=${refCode}&v=2`;
+
 
   return {
     title,
