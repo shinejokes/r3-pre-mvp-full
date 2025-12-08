@@ -87,16 +87,16 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
     <main className="r3-page">
       <div className="r3-shell">
         <div className="r3-card">
-          {/* 브랜드 로고만 남김 */}
+          {/* 브랜드 라인 */}
           <div className="r3-brand-row">
             <div className="r3-brand">R³ · THE HUMAN NETWORK</div>
           </div>
 
-          {/* 제목 + 설명 (설명이 없어도 p는 유지) */}
+          {/* 제목 + 설명 (항상 한 줄 확보) */}
           <h1 className="r3-title">{safeTitle}</h1>
-          <p className="r3-desc">{share.description ?? ""}</p>
+          <p className="r3-desc">{share.description ?? " "}</p>
 
-          {/* Views / My Views / Hop 박스 */}
+          {/* Views / My Views / Hop */}
           <div className="r3-stats-box">
             <div className="r3-stat">
               <span className="r3-stat-label">Views</span>
@@ -112,7 +112,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
             </div>
           </div>
 
-          {/* 버튼 3개 */}
+          {/* 버튼들 */}
           <div className="r3-actions">
             <button
               type="button"
@@ -186,22 +186,22 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         }
 
         .r3-brand {
-          font-size: 13px;
-          letter-spacing: 0.2em;
+          font-size: 15px; /* ✅ 조금 키움 */
+          letter-spacing: 0.22em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.7);
+          color: rgba(255, 255, 255, 0.8);
         }
 
         .r3-title {
-          margin: 0 0 6px;
-          font-size: 22px;
+          margin: 0 0 8px;
+          font-size: 24px; /* ✅ 약간 키움 */
           font-weight: 700;
           color: #ffffff;
         }
 
         .r3-desc {
           margin: 0 0 18px;
-          min-height: 18px; /* 설명이 없어도 약간의 공간 */
+          min-height: 20px; /* 설명 없어도 공간 확보 */
           font-size: 14px;
           line-height: 1.5;
           color: rgba(255, 255, 255, 0.75);
@@ -216,7 +216,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           border-radius: 999px;
           background: radial-gradient(circle at top left, #18263f, #050816);
           border: 1px solid rgba(255, 255, 255, 0.06);
-          margin-bottom: 20px;
+          margin-bottom: 24px;
         }
 
         .r3-stat {
@@ -243,19 +243,19 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         .r3-actions {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 16px; /* ✅ 버튼 사이 간격 확대 */
           margin-top: 10px;
-          align-items: center; /* 버튼을 가운데 정렬 */
+          align-items: center;
         }
 
         .r3-action-btn {
           width: 100%;
-          max-width: 420px; /* 폰 폭 기준으로 고정 느낌 */
+          max-width: 420px;
           text-align: center;
           padding: 12px 16px;
           border-radius: 999px;
-          border: 1px solid #1d4ed8;
-          background: #1d4ed8; /* 진한 파랑으로 꽉 채움 */
+          border: 1px solid rgba(255, 255, 255, 0.9); /* ✅ 하얀 테두리 */
+          background: #1d4ed8;
           color: #ffffff;
           font-size: 14px;
           font-weight: 500;
@@ -278,14 +278,13 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         }
 
         .r3-primary {
-          /* 첫 번째 버튼은 살짝 더 강조 */
           box-shadow: 0 14px 30px rgba(59, 130, 246, 0.6);
         }
 
         .r3-my-link-box {
           width: 100%;
           max-width: 420px;
-          margin-top: 6px;
+          margin-top: -8px; /* 버튼과 살짝 붙여 보기 좋게 */
           margin-bottom: 4px;
           padding: 10px 12px;
           border-radius: 16px;
@@ -333,12 +332,12 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           }
 
           .r3-brand {
-            font-size: 11px;
-            letter-spacing: 0.16em;
+            font-size: 13px;
+            letter-spacing: 0.18em;
           }
 
           .r3-title {
-            font-size: 18px;
+            font-size: 19px;
           }
 
           .r3-desc {
