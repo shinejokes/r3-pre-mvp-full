@@ -19,15 +19,9 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
 
-    // 프런트에서 보내는 필드 이름: originalUrl, title, description
     const originalUrl = body?.originalUrl as string | undefined;
     const title = (body?.title as string | undefined) ?? null;
-
-    const rawDescription = body?.description as string | undefined;
-    const description =
-      rawDescription && typeof rawDescription === "string"
-        ? rawDescription.trim()
-        : null;
+    const description = (body?.description as string | undefined) ?? null;
 
     // 원본 URL이 없으면 에러
     if (!originalUrl) {
@@ -48,7 +42,7 @@ export async function POST(req: NextRequest) {
         title,
         description,
       })
-      .select("id, original_url, title, description")
+      .select("id, original_url, title")
       .single();
 
     if (msgError || !msg) {
@@ -70,11 +64,10 @@ export async function POST(req: NextRequest) {
         ref_code: refCode,
         hop: 1,
         views: 0,
-        // 썸네일/리다이렉트에 필요한 필드
+        // 여기서부터가 핵심: 썸네일/리다이렉트에 필요한 필드 모두 채움
         original_url: msg.original_url,
         target_url: msg.original_url,
         title: msg.title,
-        description: msg.description ?? description ?? null,
       })
       .select("ref_code, hop")
       .single();
@@ -109,8 +102,6 @@ export async function POST(req: NextRequest) {
       refCode: share.ref_code,
       hop: share.hop,
       shareUrl,
-      title: msg.title,
-      description: msg.description ?? description ?? null,
     });
   } catch (err) {
     console.error("register-message API error:", err);
