@@ -87,16 +87,16 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
     <main className="r3-page">
       <div className="r3-shell">
         <div className="r3-card">
-          {/* 브랜드 라인 */}
+          {/* 브랜드 */}
           <div className="r3-brand-row">
             <div className="r3-brand">R³ · THE HUMAN NETWORK</div>
           </div>
 
-          {/* 제목 + 설명 (항상 한 줄 확보) */}
+          {/* 제목 + 설명 */}
           <h1 className="r3-title">{safeTitle}</h1>
           <p className="r3-desc">{share.description ?? " "}</p>
 
-          {/* Views / My Views / Hop */}
+          {/* 통계 */}
           <div className="r3-stats-box">
             <div className="r3-stat">
               <span className="r3-stat-label">Views</span>
@@ -186,7 +186,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         }
 
         .r3-brand {
-          font-size: 15px; /* ✅ 조금 키움 */
+          font-size: 15px;
           letter-spacing: 0.22em;
           text-transform: uppercase;
           color: rgba(255, 255, 255, 0.8);
@@ -194,14 +194,14 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
 
         .r3-title {
           margin: 0 0 8px;
-          font-size: 24px; /* ✅ 약간 키움 */
+          font-size: 24px;
           font-weight: 700;
           color: #ffffff;
         }
 
         .r3-desc {
           margin: 0 0 18px;
-          min-height: 20px; /* 설명 없어도 공간 확보 */
+          min-height: 20px;
           font-size: 14px;
           line-height: 1.5;
           color: rgba(255, 255, 255, 0.75);
@@ -243,7 +243,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         .r3-actions {
           display: flex;
           flex-direction: column;
-          gap: 16px; /* ✅ 버튼 사이 간격 확대 */
+          gap: 16px;
           margin-top: 10px;
           align-items: center;
         }
@@ -254,7 +254,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           text-align: center;
           padding: 12px 16px;
           border-radius: 999px;
-          border: 1px solid rgba(255, 255, 255, 0.9); /* ✅ 하얀 테두리 */
+          border: 1px solid rgba(255, 255, 255, 0.9);
           background: #1d4ed8;
           color: #ffffff;
           font-size: 14px;
@@ -278,13 +278,13 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         }
 
         .r3-primary {
-          box-shadow: 0 14px 30px rgba(59, 130, 246, 0.6);
+          /* ✅ 이제 일반 버튼과 같은 크기/그림자 */
         }
 
         .r3-my-link-box {
           width: 100%;
           max-width: 420px;
-          margin-top: -8px; /* 버튼과 살짝 붙여 보기 좋게 */
+          margin-top: -8px;
           margin-bottom: 4px;
           padding: 10px 12px;
           border-radius: 16px;
