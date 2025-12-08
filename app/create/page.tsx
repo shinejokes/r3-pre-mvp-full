@@ -28,6 +28,11 @@ export default function CreateSharePage() {
     setResultUrl(null);
     setRefCode(null);
 
+ if (!title.trim()) {
+    setError("제목을 입력해 주세요.");
+    return;
+  }
+
     if (!originalUrl.trim()) {
       setError("원본 URL을 입력해 주세요.");
       return;
@@ -92,20 +97,22 @@ export default function CreateSharePage() {
         style={{ display: "flex", flexDirection: "column", gap: 12 }}
       >
         {/* 제목 (선택) */}
-        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span>제목 (선택)</span>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="예: 이 영상 꼭 보세요"
-            style={{
-              padding: "8px 10px",
-              borderRadius: 6,
-              border: "1px solid #ccc",
-            }}
-          />
-        </label>
+<label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+  <span>제목 (필수)</span>
+  <input
+    type="text"
+    value={title}
+    onChange={(e) => setTitle(e.target.value)}
+    placeholder="예: 이 영상 꼭 보세요"
+    required
+    style={{
+      padding: "8px 10px",
+      borderRadius: 6,
+      border: "1px solid #ccc",
+    }}
+  />
+</label>
+
 
         {/* 🆕 설명 (선택) */}
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
