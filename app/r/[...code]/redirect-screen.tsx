@@ -6,12 +6,12 @@ import { useState } from "react";
 type ShareRow = {
   ref_code: string;
   title: string | null;
-  description?: string | null;  // ✅ description 추가
+  description?: string | null;
   original_url: string | null;
   target_url: string | null;
-  views: number | null;          // 전체 조회수(원본 기준)
+  views: number | null;
   hop: number | null;
-  self_views?: number | null;    // 내 링크 조회수
+  self_views?: number | null;
 };
 
 interface RedirectScreenProps {
@@ -36,17 +36,12 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
 
   const safeTitle = share.title || "R³ Hand-Forwarded Link";
 
-  // 전체 조회수 (원본 기준)
   const totalViews = share.views ?? 0;
-
-  // 내 링크 조회수
   const myViews = share.self_views ?? 0;
-
   const currentHop = share.hop ?? 1;
-  const hopToDisplay = myHop ?? currentHop;   // ✅ 화면에 보여줄 Hop
+  const hopToDisplay = myHop ?? currentHop;
   const targetUrl = share.target_url || share.original_url || "";
 
-  // “내 링크 만들기” – 부모 ref_code를 보내서 child share 생성
   async function handleCreateMyLink() {
     setCreating(true);
     setError(null);
@@ -88,26 +83,20 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
     }
   }
 
-  // ----------------- 여기부터 화면 레이아웃 -----------------
   return (
     <main className="r3-page">
       <div className="r3-shell">
         <div className="r3-card">
-          {/* 0. 브랜드 + 홈 링크 (한 줄에 나오도록) */}
+          {/* 브랜드 로고만 남김 */}
           <div className="r3-brand-row">
             <div className="r3-brand">R³ · THE HUMAN NETWORK</div>
-            <a href="/" className="r3-home-link">
-              R3 홈페이지로 →
-            </a>
           </div>
 
-          {/* 1. 제목 + description */}
+          {/* 제목 + 설명 (설명이 없어도 p는 유지) */}
           <h1 className="r3-title">{safeTitle}</h1>
-          {share.description && (
-            <p className="r3-desc">{share.description}</p>
-          )}
+          <p className="r3-desc">{share.description ?? ""}</p>
 
-          {/* 2. Views / My Views / Hop 한 박스 */}
+          {/* Views / My Views / Hop 박스 */}
           <div className="r3-stats-box">
             <div className="r3-stat">
               <span className="r3-stat-label">Views</span>
@@ -123,9 +112,8 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
             </div>
           </div>
 
-          {/* 3. 버튼 3개 세로 배치 */}
+          {/* 버튼 3개 */}
           <div className="r3-actions">
-            {/* (1) 내 링크 만들기 (Hop+1) */}
             <button
               type="button"
               className="r3-action-btn r3-primary"
@@ -135,7 +123,6 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
               {creating ? "링크 만드는 중..." : "내 링크 만들기 (Hop + 1)"}
             </button>
 
-            {/* 새로 만들어진 링크가 있으면 코피 버튼/표시 */}
             {created && myLink && (
               <div className="r3-my-link-box">
                 <div className="r3-my-link-url">{myLink}</div>
@@ -151,7 +138,6 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
 
             {error && <div className="r3-error">{error}</div>}
 
-            {/* (2) 원본 페이지로 바로 이동하기 */}
             <a
               href={targetUrl}
               className="r3-action-btn"
@@ -161,7 +147,6 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
               원본 페이지로 바로 이동하기
             </a>
 
-            {/* (3) R3 홈페이지로 이동 */}
             <a href="/" className="r3-action-btn">
               R3 홈페이지로 이동하기
             </a>
@@ -169,7 +154,6 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         </div>
       </div>
 
-      {/* styled-jsx: 반응형 레이아웃 */}
       <style jsx>{`
         .r3-page {
           min-height: 100vh;
@@ -197,10 +181,8 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         .r3-brand-row {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          gap: 12px;
+          justify-content: flex-start;
           margin-bottom: 12px;
-          white-space: nowrap;
         }
 
         .r3-brand {
@@ -208,19 +190,6 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           letter-spacing: 0.2em;
           text-transform: uppercase;
           color: rgba(255, 255, 255, 0.7);
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .r3-home-link {
-          font-size: 12px;
-          color: rgba(144, 202, 249, 0.9);
-          text-decoration: none;
-          flex-shrink: 0;
-        }
-
-        .r3-home-link:hover {
-          text-decoration: underline;
         }
 
         .r3-title {
@@ -232,6 +201,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
 
         .r3-desc {
           margin: 0 0 18px;
+          min-height: 18px; /* 설명이 없어도 약간의 공간 */
           font-size: 14px;
           line-height: 1.5;
           color: rgba(255, 255, 255, 0.75);
@@ -275,15 +245,17 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           flex-direction: column;
           gap: 10px;
           margin-top: 10px;
+          align-items: center; /* 버튼을 가운데 정렬 */
         }
 
         .r3-action-btn {
           width: 100%;
+          max-width: 420px; /* 폰 폭 기준으로 고정 느낌 */
           text-align: center;
           padding: 12px 16px;
           border-radius: 999px;
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          background: rgba(18, 27, 63, 0.9);
+          border: 1px solid #1d4ed8;
+          background: #1d4ed8; /* 진한 파랑으로 꽉 채움 */
           color: #ffffff;
           font-size: 14px;
           font-weight: 500;
@@ -292,18 +264,27 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          box-shadow: 0 10px 24px rgba(37, 99, 235, 0.4);
         }
 
         .r3-action-btn:hover {
-          filter: brightness(1.1);
+          filter: brightness(1.08);
+        }
+
+        .r3-action-btn:disabled {
+          opacity: 0.7;
+          cursor: default;
+          box-shadow: none;
         }
 
         .r3-primary {
-          border-color: rgba(129, 212, 250, 0.5);
-          box-shadow: 0 0 16px rgba(129, 212, 250, 0.4);
+          /* 첫 번째 버튼은 살짝 더 강조 */
+          box-shadow: 0 14px 30px rgba(59, 130, 246, 0.6);
         }
 
         .r3-my-link-box {
+          width: 100%;
+          max-width: 420px;
           margin-top: 6px;
           margin-bottom: 4px;
           padding: 10px 12px;
@@ -333,9 +314,12 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
         }
 
         .r3-error {
+          width: 100%;
+          max-width: 420px;
           margin-top: 6px;
           font-size: 12px;
           color: #ff8a80;
+          text-align: left;
         }
 
         @media (max-width: 480px) {
@@ -389,4 +373,4 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
       `}</style>
     </main>
   );
-}  // ✅ 마지막에 함수 닫는 중괄호
+}
