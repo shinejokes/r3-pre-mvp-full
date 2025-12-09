@@ -193,20 +193,34 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           color: rgba(255, 255, 255, 0.8);
         }
 
-        .r3-title {
-          margin: 0 0 8px;
-          font-size: 24px;
-          font-weight: 700;
-          color: #ffffff;
-        }
+.r3-title {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
 
-        .r3-desc {
-          margin: 0 0 18px;
-          min-height: 20px;
-          font-size: 14px;
-          line-height: 1.5;
-          color: rgba(255, 255, 255, 0.75);
-        }
+  /* ✅ 제목은 항상 한 줄만 보이게 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.r3-desc {
+  margin: 0 0 18px;
+  min-height: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.75);
+
+  /* ✅ 설명은 최대 3줄까지만 보이게 (폰/PC 공통) */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 
         .r3-stats-box {
           display: flex;

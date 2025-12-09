@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
         title,
         description,
       })
-      .select("id, original_url, title")
+      .select("id, original_url, title, description")
       .single();
 
     if (msgError || !msg) {
@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
         original_url: msg.original_url,
         target_url: msg.original_url,
         title: msg.title,
+        description: msg.description,  // ✅ 새로 추가
       })
       .select("ref_code, hop")
       .single();
