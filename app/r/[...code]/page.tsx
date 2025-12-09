@@ -9,16 +9,15 @@ export const dynamic = "force-dynamic";
 type ShareRow = {
   ref_code: string;
   title: string | null;
-  description: string | null;
   target_url: string | null;
   original_url: string | null;
-  views: number | null;
+  views: number | null;        // 이 링크의 조회수 또는 전체 조회수(아래서 덮어씀)
   hop: number | null;
   message_id: string | null;
 
-  // 화면에서 쓸 추가 필드
-  myViews?: number | null;
-  totalViews?: number | null;
+  // RedirectScreen에서 쓸 수 있도록 추가 필드
+  myViews?: number | null;     // 이 링크(My R³ 링크)의 조회수
+  totalViews?: number | null;  // 같은 message_id 묶음의 총 조회수
 };
 
 interface PageParams {
@@ -26,7 +25,7 @@ interface PageParams {
 }
 
 interface PageProps {
-  params: PageParams;
+  params: Promise<PageParams>;
 }
 
 function extractRefCode(code: string[] | string): string {
@@ -38,15 +37,14 @@ function extractRefCode(code: string[] | string): string {
 --------------------------------------------- */
 export async function generateMetadata({
   params,
-}: {
-  params: PageParams;
-}): Promise<Metadata> {
-  const refCode = extractRefCode(params.code);
+}: PageProps): Promise<Metadata> {
+  const resolved = await params;
+  const refCode = extractRefCode(resolved.code);
 
   const supabase = supabaseServer();
   const { data } = await supabase
     .from("r3_shares")
-    .select("title, description")
+    .select("title")
     .eq("ref_code", refCode)
     .maybeSingle();
 
@@ -60,7 +58,6 @@ export async function generateMetadata({
     title,
     openGraph: {
       title,
-      description: data?.description ?? undefined,
       images: [{ url: ogImageUrl, width: 1200, height: 630 }],
     },
   };
@@ -70,19 +67,21 @@ export async function generateMetadata({
    2) MAIN PAGE LOGIC
 --------------------------------------------- */
 export default async function ShareRedirectPage({ params }: PageProps) {
-  const refCode = extractRefCode(params.code);
+  const resolved = await params;
+  const refCode = extractRefCode(resolved.code);
 
   const supabase = supabaseServer();
 
-  // 2-1. 해당 공유 링크 정보 읽기 (전체 컬럼을 읽어 안전하게)
+  // 2-1. 해당 공유 링크 정보 읽기
   const { data, error } = await supabase
     .from("r3_shares")
-    .select("*")
+    .select(
+      "ref_code, title, target_url, original_url, views, hop, message_id"
+    )
     .eq("ref_code", refCode)
     .maybeSingle<ShareRow>();
 
   if (error || !data) {
-    // 디버그용으로 에러 로그 남기고 싶으면 여기에 console.log(error) 추가 가능
     return (
       <div
         style={{
@@ -117,7 +116,7 @@ export default async function ShareRedirectPage({ params }: PageProps) {
 
   await supabase.from("r3_hits").insert(hitPayload);
 
-  // 2-3. 이 링크의 조회수(My Views) 업데이트
+  // 2-3. 이 링크의 조회수(My Views) 업데이트: views = views + 1
   const currentViews = data.views ?? 0;
   const myViews = currentViews + 1;
 
@@ -132,7 +131,7 @@ export default async function ShareRedirectPage({ params }: PageProps) {
     finalMyViews = myViews;
   }
 
-  // 2-4. 같은 message_id를 가진 모든 share의 views 합산 (totalViews)
+  // 2-4. 같은 message_id를 가진 모든 share의 views를 합쳐서 totalViews 계산
   let totalViews = finalMyViews;
 
   if (data.message_id) {
@@ -151,10 +150,10 @@ export default async function ShareRedirectPage({ params }: PageProps) {
 
   // 2-5. RedirectScreen으로 넘길 객체 구성
   const shareForScreen: ShareRow = {
-    ...data,               // 여기 안에 description 포함
-    views: totalViews,     // 상단 "Views" 용
-    myViews: finalMyViews,
-    totalViews,
+    ...data,
+    views: totalViews,       // "Views" 용
+    myViews: finalMyViews,   // "My Views" 용
+    totalViews: totalViews,  // 혹시 다른 이름을 쓴다면 대비용
   };
 
   return (
