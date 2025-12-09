@@ -11,7 +11,7 @@ type ShareRow = {
   target_url: string | null;
   views: number | null;
   hop: number | null;
-  self_views?: number | null;
+  self_views?: string | null;
 };
 
 interface RedirectScreenProps {
@@ -37,7 +37,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
   const safeTitle = share.title || "R³ Hand-Forwarded Link";
 
   const totalViews = share.views ?? 0;
-  const myViews = share.self_views ?? 0;
+  const myViews = Number(share.self_views ?? 0);
   const currentHop = share.hop ?? 1;
   const hopToDisplay = myHop ?? currentHop;
   const targetUrl = share.target_url || share.original_url || "";
@@ -114,9 +114,10 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
 
           {/* 버튼들 */}
           <div className="r3-actions">
+            {/* ✅ 첫 번째 버튼: 빨강 + 동일 폭 강제 */}
             <button
               type="button"
-              className="r3-action-btn r3-primary"
+              className="r3-action-btn r3-first"
               onClick={handleCreateMyLink}
               disabled={creating}
             >
@@ -248,9 +249,14 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           align-items: center;
         }
 
+        /* ✅ 세 버튼 모두 동일 폭/레이아웃 강제 */
         .r3-action-btn {
-          width: 100%;
-          max-width: 420px;
+          display: flex !important;
+          justify-content: center;
+          align-items: center;
+          width: 100% !important;
+          max-width: 420px !important;
+
           text-align: center;
           padding: 12px 16px;
           border-radius: 999px;
@@ -261,9 +267,6 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           font-weight: 500;
           text-decoration: none;
           cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
           box-shadow: 0 10px 24px rgba(37, 99, 235, 0.4);
         }
 
@@ -277,8 +280,11 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           box-shadow: none;
         }
 
-        .r3-primary {
-          /* ✅ 이제 일반 버튼과 같은 크기/그림자 */
+        /* ✅ 첫 번째 버튼만 빨간색 */
+        .r3-first {
+          background: #ef4444 !important;
+          border-color: #fecaca !important;
+          box-shadow: 0 10px 24px rgba(239, 68, 68, 0.45) !important;
         }
 
         .r3-my-link-box {
