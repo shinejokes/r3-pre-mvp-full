@@ -91,7 +91,7 @@ export default function RegisterMessagePage() {
         style={{
           width: "100%",
           maxWidth: "640px",
-          backgroundColor: "#ffffff",
+          backgroundColor: "#FFF9E9",
           borderRadius: "12px",
           boxShadow: "0 10px 25px rgba(15, 23, 42, 0.45)",
           padding: "32px",
