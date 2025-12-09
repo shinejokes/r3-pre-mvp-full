@@ -254,16 +254,16 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
   box-sizing: border-box;
   margin: 0;
   line-height: 1.2;           /* button / a 높이 통일 */
-  min-height: 46px;           /* 세로 높이 고정 */
+  min-height: 40px;           /* 세로 높이 고정 */
 
   display: flex !important;
   justify-content: center;
   align-items: center;
   width: 100% !important;
-  max-width: 420px !important;
+  max-width: 360px !important;
 
   text-align: center;
-  padding: 12px 16px;
+  padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.9);
   background: #1d4ed8;
