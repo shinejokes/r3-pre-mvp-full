@@ -254,7 +254,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
   box-sizing: border-box;
   margin: 0;
   line-height: 1.2;           /* button / a 높이 통일 */
-  min-height: 30px;           /* 세로 높이 고정 */
+  min-height: 40px;           /* 세로 높이 고정 */
 
   display: flex !important;
   justify-content: center;
@@ -333,10 +333,14 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           text-align: left;
         }
 
-        @media (max-width: 480px) {
-          .r3-page {
-            padding: 16px 10px;
-          }
+@media (max-width: 480px) {
+  .r3-action-btn {
+    font-size: 13px;
+    padding: 6px 12px;     /* ✅ 모바일에서도 낮은 높이 유지 */
+    min-height: 40px;      /* 선택: 더 얇게 하고 싶으면 줄이기 */
+  }
+}
+
 
           .r3-card {
             padding: 18px 14px 22px;
