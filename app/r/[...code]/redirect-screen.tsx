@@ -241,51 +241,57 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           color: #ffffff;
         }
 
-        .r3-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          margin-top: 10px;
-          align-items: center;
-        }
+       .r3-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 10px;
+  align-items: center;
+}
 
-        /* ✅ 세 버튼 모두 동일 폭/레이아웃 강제 */
-        .r3-action-btn {
-          display: flex !important;
-          justify-content: center;
-          align-items: center;
-          width: 100% !important;
-          max-width: 420px !important;
+/* ✅ 세 버튼 모두 완전히 같은 박스가 되도록 강제 */
+.r3-action-btn {
+  box-sizing: border-box;
+  margin: 0;
+  line-height: 1.2;           /* button / a 높이 통일 */
+  min-height: 46px;           /* 세로 높이 고정 */
 
-          text-align: center;
-          padding: 12px 16px;
-          border-radius: 999px;
-          border: 1px solid rgba(255, 255, 255, 0.9);
-          background: #1d4ed8;
-          color: #ffffff;
-          font-size: 14px;
-          font-weight: 500;
-          text-decoration: none;
-          cursor: pointer;
-          box-shadow: 0 10px 24px rgba(37, 99, 235, 0.4);
-        }
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  width: 100% !important;
+  max-width: 420px !important;
 
-        .r3-action-btn:hover {
-          filter: brightness(1.08);
-        }
+  text-align: center;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: #1d4ed8;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.4);
+}
 
-        .r3-action-btn:disabled {
-          opacity: 0.7;
-          cursor: default;
-          box-shadow: none;
-        }
+.r3-action-btn:hover {
+  filter: brightness(1.08);
+}
 
-        /* ✅ 첫 번째 버튼만 빨간색 */
-        .r3-first {
-          background: #ef4444 !important;
-          border-color: #fecaca !important;
-          box-shadow: 0 10px 24px rgba(239, 68, 68, 0.45) !important;
-        }
+.r3-action-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* 첫 번째 버튼만 빨간색 */
+.r3-first {
+  background: #ef4444 !important;
+  border-color: #fecaca !important;
+  box-shadow: 0 10px 24px rgba(239, 68, 68, 0.45) !important;
+}
+
 
         .r3-my-link-box {
           width: 100%;
