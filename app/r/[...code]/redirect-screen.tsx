@@ -254,7 +254,7 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
   box-sizing: border-box;
   margin: 0;
   line-height: 1.2;           /* button / a 높이 통일 */
-  min-height: 40px;           /* 세로 높이 고정 */
+  min-height: 30px;           /* 세로 높이 고정 */
 
   display: flex !important;
   justify-content: center;
