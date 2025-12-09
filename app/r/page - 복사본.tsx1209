@@ -5,7 +5,6 @@ import React, { useState, FormEvent } from "react";
 export default function RegisterMessagePage() {
   const [title, setTitle] = useState("");
   const [originalUrl, setOriginalUrl] = useState("");
-  const [description, setDescription] = useState("");  // ✅ 설명 추가
   const [loading, setLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copyDone, setCopyDone] = useState(false);
@@ -26,7 +25,6 @@ export default function RegisterMessagePage() {
         body: JSON.stringify({
           title,
           originalUrl,
-          description,   // ✅ 설명을 서버로 전송
         }),
       });
 
@@ -50,7 +48,6 @@ export default function RegisterMessagePage() {
       // 폼 초기화
       setTitle("");
       setOriginalUrl("");
-      setDescription("");   // ✅ 설명 초기화
     } catch (err) {
       console.error(err);
       alert("등록 중 알 수 없는 오류가 발생했습니다.");
@@ -129,7 +126,7 @@ export default function RegisterMessagePage() {
               width: "100%",
               padding: "10px 12px",
               borderRadius: "8px",
-              border: "1px solid #d1d5db",
+              border: "1px solid #d1d5db", // ✅ 따옴표 수정
               fontSize: "14px",
             }}
             placeholder="동영상이나 글의 제목을 적어 주세요"
@@ -140,7 +137,7 @@ export default function RegisterMessagePage() {
         <label
           style={{
             display: "block",
-            marginBottom: "16px",
+            marginBottom: "24px",
             fontSize: "14px",
             fontWeight: 600,
           }}
@@ -155,37 +152,10 @@ export default function RegisterMessagePage() {
               width: "100%",
               padding: "10px 12px",
               borderRadius: "8px",
-              border: "1px solid #d1d5db",
+              border: "1px solid #d1d5db", // ✅ 여기도 동일하게
               fontSize: "14px",
             }}
-            placeholder="https:// 로 시작하는 원본 링크"
-          />
-        </label>
-
-        {/* ✅ 설명 입력칸 추가 */}
-        <label
-          style={{
-            display: "block",
-            marginBottom: "24px",
-            fontSize: "14px",
-            fontWeight: 600,
-          }}
-        >
-          설명 (선택):
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            style={{
-              marginTop: "6px",
-              width: "100%",
-              padding: "10px 12px",
-              borderRadius: "8px",
-              border: "1px solid #d1d5db",
-              fontSize: "14px",
-              minHeight: "80px",
-              resize: "vertical",
-            }}
-            placeholder="예: 이 영상은 서곡의 ‘내 안의 당신’입니다."
+            placeholder="https:// 로 시작하는 원본 링크를 붙여 넣어 주세요"
           />
         </label>
 
