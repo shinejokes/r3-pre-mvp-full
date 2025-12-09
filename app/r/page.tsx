@@ -5,7 +5,7 @@ import React, { useState, FormEvent } from "react";
 export default function RegisterMessagePage() {
   const [title, setTitle] = useState("");
   const [originalUrl, setOriginalUrl] = useState("");
-  const [description, setDescription] = useState("");  // ✅ 설명 추가
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copyDone, setCopyDone] = useState(false);
@@ -26,7 +26,7 @@ export default function RegisterMessagePage() {
         body: JSON.stringify({
           title,
           originalUrl,
-          description,   // ✅ 설명을 서버로 전송
+          description, // ✅ 설명도 함께 전송
         }),
       });
 
@@ -43,14 +43,13 @@ export default function RegisterMessagePage() {
         return;
       }
 
-      // 성공: 공유 링크 저장
       setShareUrl(data.shareUrl);
       setCopyDone(false);
 
       // 폼 초기화
       setTitle("");
       setOriginalUrl("");
-      setDescription("");   // ✅ 설명 초기화
+      setDescription("");
     } catch (err) {
       console.error(err);
       alert("등록 중 알 수 없는 오류가 발생했습니다.");
@@ -67,7 +66,6 @@ export default function RegisterMessagePage() {
         await navigator.clipboard.writeText(shareUrl);
         setCopyDone(true);
       } else {
-        // 구형 브라우저 fallback
         window.prompt("아래 링크를 복사해 주세요.", shareUrl);
       }
     } catch (e) {
@@ -80,7 +78,7 @@ export default function RegisterMessagePage() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#f9fafb",
+        backgroundColor: "#020617", // ✅ 다크 블루 배경
         display: "flex",
         justifyContent: "center",
         alignItems: "flex-start",
@@ -95,7 +93,7 @@ export default function RegisterMessagePage() {
           maxWidth: "640px",
           backgroundColor: "#ffffff",
           borderRadius: "12px",
-          boxShadow: "0 10px 25px rgba(15, 23, 42, 0.12)",
+          boxShadow: "0 10px 25px rgba(15, 23, 42, 0.45)",
           padding: "32px",
         }}
       >
@@ -124,6 +122,7 @@ export default function RegisterMessagePage() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            maxLength={60} // ✅ 한 줄 정도 분량 (폰 기준)으로 제한
             style={{
               marginTop: "6px",
               width: "100%",
@@ -132,7 +131,7 @@ export default function RegisterMessagePage() {
               border: "1px solid #d1d5db",
               fontSize: "14px",
             }}
-            placeholder="동영상이나 글의 제목을 적어 주세요"
+            placeholder="동영상이나 글의 제목을 적어 주세요 (한 줄)"
           />
         </label>
 
@@ -162,7 +161,7 @@ export default function RegisterMessagePage() {
           />
         </label>
 
-        {/* ✅ 설명 입력칸 추가 */}
+        {/* 설명 입력칸 */}
         <label
           style={{
             display: "block",
@@ -171,10 +170,11 @@ export default function RegisterMessagePage() {
             fontWeight: 600,
           }}
         >
-          설명 (선택):
+          설명 (선택, 폰 기준 3줄 이내):
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            maxLength={180} // ✅ 3줄 정도 분량으로 대략 제한
             style={{
               marginTop: "6px",
               width: "100%",
@@ -185,7 +185,7 @@ export default function RegisterMessagePage() {
               minHeight: "80px",
               resize: "vertical",
             }}
-            placeholder="예: 이 영상은 서곡의 ‘내 안의 당신’입니다."
+            placeholder="예: 이 영상은 서곡의 ‘내 안의 당신’입니다. (폰에서 3줄 이내로 보이도록 짧게)"
           />
         </label>
 
