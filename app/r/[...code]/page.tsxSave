@@ -9,15 +9,16 @@ export const dynamic = "force-dynamic";
 type ShareRow = {
   ref_code: string;
   title: string | null;
+  description: string | null;   // ✅ 설명 추가
   target_url: string | null;
   original_url: string | null;
-  views: number | null;        // 이 링크의 조회수 또는 전체 조회수(아래서 덮어씀)
+  views: number | null;         // 이 링크의 조회수 또는 전체 조회수(아래서 덮어씀)
   hop: number | null;
   message_id: string | null;
 
   // RedirectScreen에서 쓸 수 있도록 추가 필드
-  myViews?: number | null;     // 이 링크(My R³ 링크)의 조회수
-  totalViews?: number | null;  // 같은 message_id 묶음의 총 조회수
+  myViews?: number | null;      // 이 링크(My R³ 링크)의 조회수
+  totalViews?: number | null;   // 같은 message_id 묶음의 총 조회수
 };
 
 interface PageParams {
@@ -44,7 +45,7 @@ export async function generateMetadata({
   const supabase = supabaseServer();
   const { data } = await supabase
     .from("r3_shares")
-    .select("title")
+    .select("title, description")   // ✅ description까지 함께 읽음
     .eq("ref_code", refCode)
     .maybeSingle();
 
@@ -76,7 +77,16 @@ export default async function ShareRedirectPage({ params }: PageProps) {
   const { data, error } = await supabase
     .from("r3_shares")
     .select(
-      "ref_code, title, target_url, original_url, views, hop, message_id"
+      `
+      ref_code,
+      title,
+      description,         -- ✅ 설명 컬럼 추가
+      target_url,
+      original_url,
+      views,
+      hop,
+      message_id
+    `
     )
     .eq("ref_code", refCode)
     .maybeSingle<ShareRow>();
@@ -150,10 +160,10 @@ export default async function ShareRedirectPage({ params }: PageProps) {
 
   // 2-5. RedirectScreen으로 넘길 객체 구성
   const shareForScreen: ShareRow = {
-    ...data,
-    views: totalViews,       // "Views" 용
-    myViews: finalMyViews,   // "My Views" 용
-    totalViews: totalViews,  // 혹시 다른 이름을 쓴다면 대비용
+    ...data,                // ✅ 여기 안에 description도 같이 들어감
+    views: totalViews,      // "Views" 용
+    myViews: finalMyViews,  // "My Views" 용
+    totalViews: totalViews, // 혹시 다른 이름을 쓴다면 대비용
   };
 
   return (
