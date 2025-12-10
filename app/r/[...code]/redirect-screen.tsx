@@ -222,17 +222,24 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
 }
 
 
-        .r3-stats-box {
-          display: flex;
-          align-items: stretch;
-          justify-content: space-between;
-          gap: 8px;
-          padding: 10px 12px;
-          border-radius: 999px;
-          background: radial-gradient(circle at top left, #18263f, #050816);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          margin-bottom: 24px;
-        }
+/* -------------------------------------------------------
+   📊 Views Box – 그라데이션 제거 + 얇은 흰 테두리
+-------------------------------------------------------- */
+.r3-stats-box {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+
+  gap: 8px;
+  padding: 10px 12px;
+
+  border-radius: 999px;
+  background: #0a0f1f;                         /* ★ 단색 */
+  border: 1px solid rgba(255,255,255,0.32);    /* ★ 얇은 흰 테두리 */
+
+  margin-bottom: 24px;
+}
+
 
         .r3-stat {
           flex: 1 1 0;
@@ -264,48 +271,71 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
 }
 
 /* ✅ 세 버튼 모두 완전히 같은 박스가 되도록 강제 */
+/* -------------------------------------------------------
+   🔥 슬림하고 더 고급스러운 3버튼 스타일
+-------------------------------------------------------- */
+.r3-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+/* 모든 버튼 기본 공통 스타일 */
 .r3-action-btn {
   box-sizing: border-box;
-  margin: 0;
-  line-height: 1.2;           /* button / a 높이 통일 */
-  min-height: 40px;           /* 세로 높이 고정 */
+  width: 100% !important;
+  max-width: 340px !important;
+
+  min-height: 34px;          /* ★ 슬림 높이 */
+  padding: 6px 14px;         /* ★ 더 낮은 padding */
+
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.40);  
 
   display: flex !important;
   justify-content: center;
   align-items: center;
-  width: 100% !important;
-  max-width: 360px !important;
 
   text-align: center;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  background: #1d4ed8;
+  text-decoration: none;
+
   color: #ffffff;
   font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
+  font-weight: 600;
+
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.45);
+  transition: 0.15s ease;
 }
 
+/* hover */
 .r3-action-btn:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.10);
 }
 
+/* disabled */
 .r3-action-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: default;
-  box-shadow: none;
 }
 
-/* 첫 번째 버튼만 빨간색 */
+/* 🔴 첫 번째 버튼: Dark Red */
 .r3-first {
-  background: #ef4444 !important;
-  border-color: #fecaca !important;
-  box-shadow: 0 10px 24px rgba(239, 68, 68, 0.45) !important;
+  background: #7f1d1d !important;
+  border-color: rgba(255,255,255,0.35) !important;
 }
 
+/* 🔵 두 번째 버튼: Dark Blue */
+.r3-action-btn:nth-of-type(2) {
+  background: #1e3a8a !important;
+}
+
+/* 🟢 세 번째 버튼: Dark Green */
+.r3-action-btn:nth-of-type(3) {
+  background: #065f46 !important;
+}
 
         .r3-my-link-box {
           width: 100%;
