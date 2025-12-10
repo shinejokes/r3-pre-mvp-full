@@ -46,7 +46,6 @@ export default function RegisterMessagePage() {
       setShareUrl(data.shareUrl);
       setCopyDone(false);
 
-      // 폼 초기화
       setTitle("");
       setOriginalUrl("");
       setDescription("");
@@ -80,20 +79,24 @@ export default function RegisterMessagePage() {
         minHeight: "100vh",
         backgroundColor: "#020617", // 바깥 다크 블루
         fontFamily: "system-ui, sans-serif",
-        padding: "80px 16px 40px", // ✅ 좌우 16px 여백을 주고
-        boxSizing: "border-box", // 패딩 포함 폭 계산
+        display: "flex",
+        justifyContent: "center",     // ✅ 가로 중앙
+        alignItems: "flex-start",
+        paddingTop: 80,
+        paddingBottom: 40,
+        boxSizing: "border-box",
       }}
     >
       <form
         onSubmit={handleSubmit}
         style={{
-          width: "100%",
-          maxWidth: "640px",
-          margin: "0 auto", // ✅ 항상 가운데 정렬
+          flex: "0 1 640px",          // 최대 640px, 남으면 가운데 정렬
+          margin: "0 16px",           // ✅ 좌우 16px 고정 여백 (폰에서 양쪽 동일)
           backgroundColor: "#FFF9E9", // 아이보리 박스
           borderRadius: "12px",
           boxShadow: "0 10px 25px rgba(15, 23, 42, 0.45)",
-          padding: "32px",
+          padding: "32px 24px 28px",
+          boxSizing: "border-box",
         }}
       >
         <h1
@@ -121,7 +124,7 @@ export default function RegisterMessagePage() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            maxLength={60} // 한 줄 정도로 제한
+            maxLength={60}
             style={{
               marginTop: "6px",
               width: "100%",
