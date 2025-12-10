@@ -9,16 +9,16 @@ export const dynamic = "force-dynamic";
 type ShareRow = {
   ref_code: string;
   title: string | null;
-  description: string | null;   // ★ description 필드 추가 (r3_shares 기준)
+  description: string | null;   // description 필드 (r3_shares 기준)
   target_url: string | null;
   original_url: string | null;
-  views: number | null;         // 이 링크의 조회수 또는 전체 조회수(아래서 덮어씀)
+  views: number | null;
   hop: number | null;
   message_id: string | null;
 
-  // RedirectScreen에서 쓸 수 있도록 추가 필드
-  myViews?: number | null;      // 이 링크(My R³ 링크)의 조회수
-  totalViews?: number | null;   // 같은 message_id 묶음의 총 조회수
+  // RedirectScreen에서 사용할 확장 필드
+  myViews?: number | null;
+  totalViews?: number | null;
 };
 
 interface PageParams {
@@ -45,7 +45,7 @@ export async function generateMetadata({
   const supabase = supabaseServer();
   const { data } = await supabase
     .from("r3_shares")
-    .select("title, description") // ★ description도 함께 조회
+    .select("title, description")
     .eq("ref_code", refCode)
     .maybeSingle<Pick<ShareRow, "title" | "description">>();
 
@@ -169,9 +169,9 @@ export default async function ShareRedirectPage({ params }: PageProps) {
   // 2-5. RedirectScreen으로 넘길 객체 구성
   const shareForScreen: ShareRow = {
     ...data,
-    views: totalViews,       // "Views" 용
-    myViews: finalMyViews,   // "My Views" 용
-    totalViews: totalViews,  // 혹시 다른 이름을 쓴다면 대비용
+    views: totalViews,       // "Views" 표시용
+    myViews: finalMyViews,   // "My Views"
+    totalViews: totalViews,
   };
 
   return (
@@ -182,40 +182,7 @@ export default async function ShareRedirectPage({ params }: PageProps) {
         color: "white",
       }}
     >
-      {/* ★ description 박스 - 중간 등록화면 상단에 표시 */}
-      {shareForScreen.description && (
-        <div
-          style={{
-            maxWidth: 800,
-            margin: "0 auto",
-            padding: "16px 16px 0",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 12,
-              color: "#9ca3af",
-              marginBottom: 4,
-            }}
-          >
-            Description
-          </div>
-          <div
-            style={{
-              fontSize: 14,
-              lineHeight: 1.6,
-              whiteSpace: "pre-line",
-              padding: "10px 12px",
-              borderRadius: 8,
-              backgroundColor: "#0b1120",
-              border: "1px solid #1f2937",
-            }}
-          >
-            {shareForScreen.description}
-          </div>
-        </div>
-      )}
-
+      {/* 상단 description 박스 제거 → RedirectScreen 안에서만 한 번 표시 */}
       <RedirectScreen share={shareForScreen} />
     </div>
   );
