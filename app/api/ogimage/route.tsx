@@ -54,6 +54,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const shareId = searchParams.get("shareId");
 
+  // shareId 없을 때 기본 썸네일
   if (!shareId) {
     return new ImageResponse(
       (
@@ -82,6 +83,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = supabaseServer();
 
+  // r3_shares에서 정보 읽기 (message_id 포함)
   const { data, error } = await supabase
     .from("r3_shares")
     .select("title, views, hop, original_url, description, message_id")
@@ -112,18 +114,34 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // 제목 (너무 길면 자르기)
   const rawTitle = data.title || "R3 링크";
   const title =
     rawTitle.length > 40 ? rawTitle.slice(0, 37) + "…" : rawTitle;
 
-  const descriptionText =
+  // 🔥 description: r3_shares → 없으면 r3_messages에서 fallback
+  let descriptionText =
     (data.description && data.description.trim()) || null;
 
+  if (!descriptionText && data.message_id) {
+    const { data: msg, error: msgError } = await supabase
+      .from("r3_messages")
+      .select("description")
+      .eq("id", data.message_id)
+      .maybeSingle<{ description: string | null }>();
+
+    if (!msgError && msg?.description) {
+      const trimmed = msg.description.trim();
+      if (trimmed) descriptionText = trimmed;
+    }
+  }
+
+  // 출처/타입 자동 추출
   const meta = getContentMeta(data.original_url);
   const typeLine = `${meta.sourceLabel} · ${meta.typeLabel}`;
 
+  // 동일 message_id 묶음의 total views
   let totalViews = data.views ?? 0;
-
   if (data.message_id) {
     const { data: siblings } = await supabase
       .from("r3_shares")
@@ -181,7 +199,7 @@ export async function GET(req: NextRequest) {
           {title}
         </div>
 
-        {/* 설명 - 최대 2줄 */}
+        {/* Description - 최대 2줄, fallback 적용 결과 표시 */}
         <div
           style={{
             marginTop: 28,
