@@ -107,20 +107,21 @@ export default async function HomePage() {
               flexWrap: "wrap",
             }}
           >
-            <Link
-              href="/create"
-              style={{
-                padding: "8px 14px",
-                borderRadius: 999,
-                border: "1px solid #f9f2ff",
-                fontSize: 14,
-                textDecoration: "none",
-                color: "#1a0033",
-                backgroundColor: "#f9f2ff",
-              }}
-            >
-              내 링크 만들기
-            </Link>
+<Link
+  href="/r"
+  style={{
+    padding: "8px 14px",
+    borderRadius: 999,
+    border: "1px solid #f9f2ff",
+    fontSize: 14,
+    textDecoration: "none",
+    color: "#1a0033",
+    backgroundColor: "#f9f2ff",
+  }}
+>
+  내 링크 만들기
+</Link>
+
           </div>
         </header>
 

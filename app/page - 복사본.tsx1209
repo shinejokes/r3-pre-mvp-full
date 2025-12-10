@@ -194,10 +194,10 @@ export default async function HomePage() {
           )}
         </section>
 
-        {/* 3. 최고 Hop Top5 */}
+        {/* 3. 오늘의 Top Hop 5 */}
         <section>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
-            최고 Hop Top 5 (네트워크 깊이)
+            오늘의 Top Hop 5 (전달 깊이)
           </h2>
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
             각 공유 링크의 <code>hop</code> 값을 기준으로,
