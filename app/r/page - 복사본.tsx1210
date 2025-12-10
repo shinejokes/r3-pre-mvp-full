@@ -26,7 +26,7 @@ export default function RegisterMessagePage() {
         body: JSON.stringify({
           title,
           originalUrl,
-          description,
+          description, // ✅ 설명도 함께 전송
         }),
       });
 
@@ -78,10 +78,12 @@ export default function RegisterMessagePage() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#020617", // 바깥 다크 블루
+        backgroundColor: "#020617", // ✅ 다크 블루 배경
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        paddingTop: "80px",
         fontFamily: "system-ui, sans-serif",
-        padding: "80px 16px 40px", // ✅ 좌우 16px 여백을 주고
-        boxSizing: "border-box", // 패딩 포함 폭 계산
       }}
     >
       <form
@@ -89,8 +91,7 @@ export default function RegisterMessagePage() {
         style={{
           width: "100%",
           maxWidth: "640px",
-          margin: "0 auto", // ✅ 항상 가운데 정렬
-          backgroundColor: "#FFF9E9", // 아이보리 박스
+          backgroundColor: "#FFF9E9",
           borderRadius: "12px",
           boxShadow: "0 10px 25px rgba(15, 23, 42, 0.45)",
           padding: "32px",
@@ -121,7 +122,7 @@ export default function RegisterMessagePage() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            maxLength={60} // 한 줄 정도로 제한
+            maxLength={60} // ✅ 한 줄 정도 분량 (폰 기준)으로 제한
             style={{
               marginTop: "6px",
               width: "100%",
@@ -129,7 +130,6 @@ export default function RegisterMessagePage() {
               borderRadius: "8px",
               border: "1px solid #d1d5db",
               fontSize: "14px",
-              boxSizing: "border-box",
             }}
             placeholder="동영상이나 글의 제목을 적어 주세요 (한 줄)"
           />
@@ -156,7 +156,6 @@ export default function RegisterMessagePage() {
               borderRadius: "8px",
               border: "1px solid #d1d5db",
               fontSize: "14px",
-              boxSizing: "border-box",
             }}
             placeholder="https:// 로 시작하는 원본 링크"
           />
@@ -175,7 +174,7 @@ export default function RegisterMessagePage() {
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            maxLength={180}
+            maxLength={180} // ✅ 3줄 정도 분량으로 대략 제한
             style={{
               marginTop: "6px",
               width: "100%",
@@ -185,7 +184,6 @@ export default function RegisterMessagePage() {
               fontSize: "14px",
               minHeight: "80px",
               resize: "vertical",
-              boxSizing: "border-box",
             }}
             placeholder="예: 이 영상은 서곡의 ‘내 안의 당신’입니다. (폰에서 3줄 이내로 보이도록 짧게)"
           />
@@ -205,7 +203,6 @@ export default function RegisterMessagePage() {
             fontSize: "16px",
             fontWeight: 600,
             cursor: loading ? "default" : "pointer",
-            boxSizing: "border-box",
           }}
         >
           {loading ? "등록 중..." : "메시지 등록하기"}
