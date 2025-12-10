@@ -5,10 +5,7 @@ import { supabaseServer } from "../../../lib/supabaseServer";
 
 export const runtime = "edge";
 
-const size = {
-  width: 1200,
-  height: 630,
-};
+const size = { width: 1200, height: 630 };
 
 type ContentMeta = {
   typeLabel: string;
@@ -74,13 +71,7 @@ export async function GET(req: NextRequest) {
               'system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif',
           }}
         >
-          <div
-            style={{
-              fontSize: 40,
-              letterSpacing: 6,
-              textTransform: "uppercase",
-            }}
-          >
+          <div style={{ fontSize: 48, letterSpacing: 4 }}>
             R³ · THE HUMAN NETWORK
           </div>
         </div>
@@ -122,7 +113,8 @@ export async function GET(req: NextRequest) {
   }
 
   const rawTitle = data.title || "R3 링크";
-  const title = rawTitle.length > 40 ? rawTitle.slice(0, 37) + "…" : rawTitle;
+  const title =
+    rawTitle.length > 40 ? rawTitle.slice(0, 37) + "…" : rawTitle;
 
   const descriptionText =
     (data.description && data.description.trim()) || null;
@@ -133,12 +125,12 @@ export async function GET(req: NextRequest) {
   let totalViews = data.views ?? 0;
 
   if (data.message_id) {
-    const { data: siblings, error: sumError } = await supabase
+    const { data: siblings } = await supabase
       .from("r3_shares")
       .select("views")
       .eq("message_id", data.message_id);
 
-    if (!sumError && siblings) {
+    if (siblings) {
       totalViews = siblings.reduce(
         (sum, r) => sum + (r.views ?? 0),
         0
@@ -165,12 +157,11 @@ export async function GET(req: NextRequest) {
             'system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif',
         }}
       >
-        {/* 🔥 상단 라벨 (글씨 더 크게 + 문구 변경) */}
+        {/* 상단 라벨 */}
         <div
           style={{
-            fontSize: 38,          // ← 30 → 38 로 크게
-            letterSpacing: 5,
-            textTransform: "uppercase",
+            fontSize: 48,
+            letterSpacing: 4,
             opacity: 0.85,
             marginBottom: 32,
           }}
@@ -178,53 +169,47 @@ export async function GET(req: NextRequest) {
           R³ · THE HUMAN NETWORK
         </div>
 
-        {/* 내용 영역 */}
+        {/* 제목 */}
         <div
           style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            maxWidth: 900,
+            fontSize: 72,
+            fontWeight: 700,
+            lineHeight: 1.1,
+            whiteSpace: "pre-wrap",
           }}
         >
-          {/* 제목 */}
-          <div
-            style={{
-              fontSize: 60,
-              fontWeight: 700,
-              lineHeight: 1.15,
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {title}
-          </div>
-
-          {/* 🔥 Description 확대 */}
-          <div
-            style={{
-              marginTop: 24,
-              fontSize: 34,      // ← 30 → 34 로 확대
-              lineHeight: 1.4,
-              minHeight: 40,
-              opacity: descriptionText ? 0.96 : 0,
-            }}
-          >
-            {descriptionText || " "}
-          </div>
-
-          {/* 🔥 Video Type 라벨 확대 */}
-          <div
-            style={{
-              marginTop: 16,
-              fontSize: 32,      // ← 26 → 32 로 확대
-              color: "#9ca3af",
-            }}
-          >
-            {typeLine}
-          </div>
+          {title}
         </div>
 
-        {/* 하단 안내 + 배지 */}
+        {/* 설명 - 최대 2줄 */}
+        <div
+          style={{
+            marginTop: 28,
+            fontSize: 44,
+            lineHeight: 1.3,
+            maxHeight: 120,
+            overflow: "hidden",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            opacity: descriptionText ? 0.96 : 0,
+          }}
+        >
+          {descriptionText || " "}
+        </div>
+
+        {/* 출처 라벨 */}
+        <div
+          style={{
+            marginTop: 24,
+            fontSize: 44,
+            color: "#9ca3af",
+          }}
+        >
+          {typeLine}
+        </div>
+
+        {/* 하단부 */}
         <div
           style={{
             display: "flex",
@@ -232,13 +217,7 @@ export async function GET(req: NextRequest) {
             marginTop: 40,
           }}
         >
-          <div
-            style={{
-              flex: 1,
-              fontSize: 26,
-              color: "#60a5fa",
-            }}
-          >
+          <div style={{ flex: 1, fontSize: 38, color: "#60a5fa" }}>
             여기를 눌러 링크를 확인하세요.
           </div>
 
@@ -246,14 +225,14 @@ export async function GET(req: NextRequest) {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 28,
-              padding: "20px 52px",
+              gap: 32,
+              padding: "24px 56px",
               borderRadius: 9999,
               border: "3px solid #e5e7eb",
-              fontSize: 44,
+              fontSize: 56,
               fontWeight: 500,
               background:
-                "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(15,23,42,0.4))",
+                "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(15,23,42,0.5))",
             }}
           >
             <span style={{ fontWeight: 700 }}>R³</span>
