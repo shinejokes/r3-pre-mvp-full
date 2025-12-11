@@ -114,10 +114,10 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // 제목 (너무 길면 자르기)
+  // 제목 (길면 잘라서 표시만)
   const rawTitle = data.title || "R3 링크";
   const title =
-    rawTitle.length > 40 ? rawTitle.slice(0, 37) + "…" : rawTitle;
+    rawTitle.length > 80 ? rawTitle.slice(0, 77) + "…" : rawTitle;
 
   // description: r3_shares → 없으면 r3_messages에서 fallback
   let descriptionText =
@@ -159,6 +159,7 @@ export async function GET(req: NextRequest) {
   const views = totalViews;
   const hop = data.hop ?? 0;
 
+  // ===== 여기서부터 실제 썸네일 레이아웃 =====
   return new ImageResponse(
     (
       <div
@@ -175,60 +176,63 @@ export async function GET(req: NextRequest) {
             'system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif',
         }}
       >
-        {/* 상단 라벨 */}
+        {/* 상단 브랜드 라벨 */}
         <div
           style={{
-            fontSize: 48,
+            fontSize: 44,
             letterSpacing: 4,
-            opacity: 0.85,
-            marginBottom: 32,
+            opacity: 0.9,
+            marginBottom: 20,
           }}
         >
           R³ · THE HUMAN NETWORK
         </div>
 
-        {/* 제목 (72, Bold 그대로) */}
+        {/* 제목 : 54, 옅은 노랑, 최대 2줄 */}
         <div
           style={{
-            fontSize: 72,
+            fontSize: 54,
             fontWeight: 700,
-            lineHeight: 1.1,
-            whiteSpace: "pre-wrap",
+            color: "#fef08a",
+            lineHeight: 1.2,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
           }}
         >
           {title}
         </div>
 
-        {/* Description - 최대 2줄, 54px */}
+        {/* Description : 54, 최대 2줄 */}
         <div
           style={{
-            marginTop: 28,
+            marginTop: 18,
             fontSize: 54,
             lineHeight: 1.25,
-            maxHeight: 150, // 2줄까지 보이도록 여유
-            overflow: "hidden",
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
+            overflow: "hidden",
             opacity: descriptionText ? 0.96 : 0,
           }}
         >
           {descriptionText || " "}
         </div>
 
-        {/* 출처 라벨 (부제 54, 옅은 노랑) */}
+        {/* 부제(출처/타입) : 54 */}
         <div
           style={{
-            marginTop: 24,
+            marginTop: 22,
             fontSize: 54,
             fontWeight: 600,
-            color: "#fef08a", // 옅은 노랑
+            color: "#fef9c3", // 아주 옅은 노랑
           }}
         >
           {typeLine}
         </div>
 
-        {/* 하단부 - 오른쪽 정렬된 Views/Hop 배지 */}
+        {/* 하단 Views/Hop 배지 : 54 */}
         <div
           style={{
             display: "flex",
