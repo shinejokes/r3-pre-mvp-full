@@ -119,7 +119,7 @@ export async function GET(req: NextRequest) {
   const title =
     rawTitle.length > 40 ? rawTitle.slice(0, 37) + "…" : rawTitle;
 
-  // 🔥 description: r3_shares → 없으면 r3_messages에서 fallback
+  // description: r3_shares → 없으면 r3_messages에서 fallback
   let descriptionText =
     (data.description && data.description.trim()) || null;
 
@@ -187,7 +187,7 @@ export async function GET(req: NextRequest) {
           R³ · THE HUMAN NETWORK
         </div>
 
-        {/* 제목 */}
+        {/* 제목 (72, Bold 그대로) */}
         <div
           style={{
             fontSize: 72,
@@ -199,13 +199,13 @@ export async function GET(req: NextRequest) {
           {title}
         </div>
 
-        {/* Description - 최대 2줄, fallback 적용 결과 표시 */}
+        {/* Description - 최대 2줄, 54px */}
         <div
           style={{
             marginTop: 28,
-            fontSize: 44,
-            lineHeight: 1.3,
-            maxHeight: 120,
+            fontSize: 54,
+            lineHeight: 1.25,
+            maxHeight: 150, // 2줄까지 보이도록 여유
             overflow: "hidden",
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -216,38 +216,36 @@ export async function GET(req: NextRequest) {
           {descriptionText || " "}
         </div>
 
-        {/* 출처 라벨 */}
+        {/* 출처 라벨 (부제 54, 옅은 노랑) */}
         <div
           style={{
             marginTop: 24,
-            fontSize: 44,
-            color: "#9ca3af",
+            fontSize: 54,
+            fontWeight: 600,
+            color: "#fef08a", // 옅은 노랑
           }}
         >
           {typeLine}
         </div>
 
-        {/* 하단부 */}
+        {/* 하단부 - 오른쪽 정렬된 Views/Hop 배지 */}
         <div
           style={{
             display: "flex",
+            justifyContent: "flex-end",
             alignItems: "center",
             marginTop: 40,
           }}
         >
-          <div style={{ flex: 1, fontSize: 38, color: "#60a5fa" }}>
-            여기를 눌러 링크를 확인하세요.
-          </div>
-
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: 32,
-              padding: "24px 56px",
+              padding: "12px 24px", // 요청하신 padding
               borderRadius: 9999,
               border: "3px solid #e5e7eb",
-              fontSize: 56,
+              fontSize: 54,
               fontWeight: 500,
               background:
                 "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(15,23,42,0.5))",
