@@ -288,8 +288,8 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
   width: 100% !important;
   max-width: 340px !important;
 
-  min-height: 24px;          /* ★ 슬림 높이 34 */  
-  padding: 6px 7px;         /* ★ 더 낮은 padding 6,14 */ 
+  min-height:14px;          /* ★ 슬림 높이 34 */  
+  padding: 6px 6px;         /* ★ 더 낮은 padding 6,14 */ 
 
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.40);  
