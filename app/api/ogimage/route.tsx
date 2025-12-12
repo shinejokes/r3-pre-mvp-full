@@ -205,20 +205,23 @@ export async function GET(req: NextRequest) {
         </div>
 
         {/* 3) Description : 54, 최대 2줄 */}
-        <div
-          style={{
-            marginTop: 18,
-            fontSize: 54,
-            lineHeight: 1.25,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            opacity: descriptionText ? 0.96 : 0,
-          }}
-        >
-          {descriptionText || " "}
-        </div>
+ {/* 3) Description — 고정 박스 (최대 3줄) */}
+<div
+  style={{
+    marginTop: 24,             // 제목과의 간격 ↑
+    fontSize: 54,
+    lineHeight: 1.25,
+    height: 210,               // ★ 절대크기 박스 → 3줄 유지
+    overflow: "hidden",        // 넘치면 자름
+    display: "-webkit-box",
+    WebkitLineClamp: 3,        // 최대 3줄
+    WebkitBoxOrient: "vertical",
+    opacity: descriptionText ? 0.96 : 0,
+  }}
+>
+  {descriptionText || " "}
+</div>
+
 
         {/* 중간 여백 */}
         <div style={{ flexGrow: 1 }} />
