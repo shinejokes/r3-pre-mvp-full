@@ -36,37 +36,34 @@ function extractRefCode(code: string[] | string): string {
 /* ---------------------------------------------
    1) OG IMAGE META
 --------------------------------------------- */
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
-  const resolved = await params;
-  const refCode = extractRefCode(resolved.code);
+export async function generateMetadata(
+  { params }: PageProps
+): Promise<Metadata> {
 
-  const supabase = supabaseServer();
-  const { data } = await supabase
-    .from("r3_shares")
-    .select("title, description")
-    .eq("ref_code", refCode)
-    .maybeSingle<Pick<ShareRow, "title" | "description">>();
-
-  const title = data?.title || "R³ Hand-Forwarded Link";
-const description = "";
-// const description = data?.description || "Hand-forwarded link via the R³ experiment.";
-
-  const base =
-    process.env.R3_APP_BASE_URL || "https://r3-pre-mvp-full.vercel.app";
-  const ogImageUrl = `${base}/api/ogimage?shareId=${refCode}`;
+  // ... 기존 코드 그대로 ...
 
   return {
     title,
-    description,
+    description: "",
+
     openGraph: {
       title,
-      description,
-      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+      description: "",
+      siteName: "",        // ⭐ 핵심: LINE이 잡아갈 이름 제거
+      images: [
+        { url: ogImageUrl, width: 1200, height: 630 }
+      ],
+    },
+
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: "",
+      images: [ogImageUrl],
     },
   };
 }
+
 
 /* ---------------------------------------------
    2) MAIN PAGE LOGIC
