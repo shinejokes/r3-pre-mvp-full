@@ -188,21 +188,21 @@ export async function GET(req: NextRequest) {
           {typeLine}
         </div>
 
-        {/* 2) 제목 : 60, Bold, 옅은 노랑, 최대 2줄 */}
-        <div
-          style={{
-            fontSize: 60,
-            fontWeight: 700,
-            color: "#fef08a",
-            lineHeight: 1.25,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {title}
-        </div>
+     {/* 2) 제목 — 한 줄 고정 */}
+<div
+  style={{
+    fontSize: 60,
+    fontWeight: 700,
+    color: "#fef08a",
+    lineHeight: 1.25,
+    whiteSpace: "nowrap",       // ★ 한 줄만 표시
+    overflow: "hidden",         // 넘치면 숨기기
+    textOverflow: "ellipsis",   // ★ 말줄임표
+  }}
+>
+  {title}
+</div>
+
 
         {/* 3) Description : 54, 최대 2줄 */}
  {/* 3) Description — 고정 박스 (최대 3줄) */}
