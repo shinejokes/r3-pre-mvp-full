@@ -39,8 +39,21 @@ function extractRefCode(code: string[] | string): string {
 export async function generateMetadata(
   { params }: PageProps
 ): Promise<Metadata> {
+  const resolved = await params;
+  const refCode = extractRefCode(resolved.code);
 
-  // ... 기존 코드 그대로 ...
+  const supabase = supabaseServer();
+  const { data } = await supabase
+    .from("r3_shares")
+    .select("title")
+    .eq("ref_code", refCode)
+    .maybeSingle<Pick<ShareRow, "title">>();
+
+  const title = data?.title || "R³ Hand-Forwarded Link";
+
+  const base =
+    process.env.R3_APP_BASE_URL || "https://r3-pre-mvp-full.vercel.app";
+  const ogImageUrl = `${base}/api/ogimage?shareId=${refCode}`;
 
   return {
     title,
@@ -49,10 +62,8 @@ export async function generateMetadata(
     openGraph: {
       title,
       description: "",
-      siteName: "",        // ⭐ 핵심: LINE이 잡아갈 이름 제거
-      images: [
-        { url: ogImageUrl, width: 1200, height: 630 }
-      ],
+      siteName: "", // ⭐ LINE이 하단에 붙이는 'R3 THE HUMAN NETWORK' 방지
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
     },
 
     twitter: {
@@ -63,7 +74,6 @@ export async function generateMetadata(
     },
   };
 }
-
 
 /* ---------------------------------------------
    2) MAIN PAGE LOGIC
