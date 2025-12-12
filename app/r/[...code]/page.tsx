@@ -50,8 +50,8 @@ export async function generateMetadata({
     .maybeSingle<Pick<ShareRow, "title" | "description">>();
 
   const title = data?.title || "R³ Hand-Forwarded Link";
-  const description =
-    data?.description || "Hand-forwarded link via the R³ experiment.";
+const description = "";
+// const description = data?.description || "Hand-forwarded link via the R³ experiment.";
 
   const base =
     process.env.R3_APP_BASE_URL || "https://r3-pre-mvp-full.vercel.app";

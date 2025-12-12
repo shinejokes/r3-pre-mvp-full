@@ -83,7 +83,6 @@ export async function GET(req: NextRequest) {
 
   const supabase = supabaseServer();
 
-  // r3_shares에서 정보 읽기 (message_id 포함)
   const { data, error } = await supabase
     .from("r3_shares")
     .select("title, views, hop, original_url, description, message_id")
@@ -114,7 +113,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // 제목 (길면 잘라서 표시만)
+  // 제목 (표시용으로만 살짝 자르기)
   const rawTitle = data.title || "R3 링크";
   const title =
     rawTitle.length > 80 ? rawTitle.slice(0, 77) + "…" : rawTitle;
@@ -136,11 +135,10 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 출처/타입 자동 추출
   const meta = getContentMeta(data.original_url);
   const typeLine = `${meta.sourceLabel} · ${meta.typeLabel}`;
 
-  // 동일 message_id 묶음의 total views
+  // message_id 묶음 total views
   let totalViews = data.views ?? 0;
   if (data.message_id) {
     const { data: siblings } = await supabase
@@ -159,7 +157,6 @@ export async function GET(req: NextRequest) {
   const views = totalViews;
   const hop = data.hop ?? 0;
 
-  // ===== 여기서부터 실제 썸네일 레이아웃 =====
   return new ImageResponse(
     (
       <div
@@ -176,25 +173,15 @@ export async function GET(req: NextRequest) {
             'system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif',
         }}
       >
-        {/* 상단 브랜드 라벨 */}
-        <div
-          style={{
-            fontSize: 44,
-            letterSpacing: 4,
-            opacity: 0.9,
-            marginBottom: 20,
-          }}
-        >
-          R³ · THE HUMAN NETWORK
-        </div>
+        {/* ⛔ 상단 브랜드 라벨 삭제됨 */}
 
-        {/* 제목 : 54, 옅은 노랑, 최대 2줄 */}
+        {/* 제목 : 60, Bold, 옅은 노랑, 최대 2줄 */}
         <div
           style={{
-            fontSize: 54,
+            fontSize: 60,
             fontWeight: 700,
             color: "#fef08a",
-            lineHeight: 1.2,
+            lineHeight: 1.25,
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
@@ -226,7 +213,7 @@ export async function GET(req: NextRequest) {
             marginTop: 22,
             fontSize: 54,
             fontWeight: 600,
-            color: "#fef9c3", // 아주 옅은 노랑
+            color: "#fef9c3",
           }}
         >
           {typeLine}
@@ -246,7 +233,7 @@ export async function GET(req: NextRequest) {
               display: "flex",
               alignItems: "center",
               gap: 32,
-              padding: "12px 24px", // 요청하신 padding
+              padding: "12px 24px",
               borderRadius: 9999,
               border: "3px solid #e5e7eb",
               fontSize: 54,
