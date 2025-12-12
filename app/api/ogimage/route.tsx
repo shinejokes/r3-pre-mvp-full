@@ -227,7 +227,7 @@ export async function GET(req: NextRequest) {
         <div style={{ flexGrow: 1 }} />
 
         {/* 4) 맨 아랫줄: R³ THE HUMAN NETWORK · Views · Hop */}
-       // 중간 여백
+{/* 중간여백 */}
 <div style={{ flexGrow: 1 }} />
 
 {/* 4) 맨 아랫줄: R³ NETWORK · Views · Hop */}
