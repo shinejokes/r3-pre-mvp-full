@@ -182,7 +182,7 @@ export async function GET(req: NextRequest) {
             fontSize: 54,
             fontWeight: 600,
             color: accentRed,
-            marginBottom: 10,
+            marginBottom: 24,
           }}
         >
           {typeLine}
@@ -224,22 +224,29 @@ export async function GET(req: NextRequest) {
         <div style={{ flexGrow: 1 }} />
 
         {/* 4) 맨 아랫줄: R³ THE HUMAN NETWORK · Views · Hop */}
-        <div
-          style={{
-            fontSize: 54,
-            fontWeight: 500,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <span style={{ letterSpacing: 2 }}>
-            R³ THE HUMAN NETWORK
-          </span>
-          <span style={{ color: accentRed }}>
-            Views {views} · Hop {hop}
-          </span>
-        </div>
+       // 중간 여백
+<div style={{ flexGrow: 1 }} />
+
+{/* 4) 맨 아랫줄: R³ NETWORK · Views · Hop */}
+<div
+  style={{
+    fontSize: 54,
+    fontWeight: 500,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 20,              // ← 설명과 약간 띄우기
+    whiteSpace: "nowrap",       // ← 가능하면 한 줄 유지
+  }}
+>
+  <span style={{ letterSpacing: 2 }}>
+    R³ NETWORK                   {/* ← 글자를 줄여 한 줄에 맞추기 */}
+  </span>
+  <span style={{ color: accentRed }}>
+    Views {views} · Hop {hop}
+  </span>
+</div>
+
       </div>
     ),
     size
