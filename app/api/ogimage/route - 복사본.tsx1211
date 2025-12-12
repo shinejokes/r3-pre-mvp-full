@@ -157,9 +157,6 @@ export async function GET(req: NextRequest) {
   const views = totalViews;
   const hop = data.hop ?? 0;
 
-  // ===== 썸네일 레이아웃 =====
-  const accentRed = "#fecaca"; // 옅은 붉은색
-
   return new ImageResponse(
     (
       <div
@@ -176,19 +173,9 @@ export async function GET(req: NextRequest) {
             'system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif',
         }}
       >
-        {/* 1) 맨 윗줄: 영상 종류 (부제)  */}
-        <div
-          style={{
-            fontSize: 54,
-            fontWeight: 600,
-            color: accentRed,
-            marginBottom: 10,
-          }}
-        >
-          {typeLine}
-        </div>
+        {/* ⛔ 상단 브랜드 라벨 삭제됨 */}
 
-        {/* 2) 제목 : 60, Bold, 옅은 노랑, 최대 2줄 */}
+        {/* 제목 : 60, Bold, 옅은 노랑, 최대 2줄 */}
         <div
           style={{
             fontSize: 60,
@@ -204,7 +191,7 @@ export async function GET(req: NextRequest) {
           {title}
         </div>
 
-        {/* 3) Description : 54, 최대 2줄 */}
+        {/* Description : 54, 최대 2줄 */}
         <div
           style={{
             marginTop: 18,
@@ -220,25 +207,45 @@ export async function GET(req: NextRequest) {
           {descriptionText || " "}
         </div>
 
-        {/* 중간 여백 */}
-        <div style={{ flexGrow: 1 }} />
-
-        {/* 4) 맨 아랫줄: R³ THE HUMAN NETWORK · Views · Hop */}
+        {/* 부제(출처/타입) : 54 */}
         <div
           style={{
+            marginTop: 22,
             fontSize: 54,
-            fontWeight: 500,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            fontWeight: 600,
+            color: "#fef9c3",
           }}
         >
-          <span style={{ letterSpacing: 2 }}>
-            R³ THE HUMAN NETWORK
-          </span>
-          <span style={{ color: accentRed }}>
-            Views {views} · Hop {hop}
-          </span>
+          {typeLine}
+        </div>
+
+        {/* 하단 Views/Hop 배지 : 54 */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            marginTop: 40,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 32,
+              padding: "12px 24px",
+              borderRadius: 9999,
+              border: "3px solid #e5e7eb",
+              fontSize: 54,
+              fontWeight: 500,
+              background:
+                "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(15,23,42,0.5))",
+            }}
+          >
+            <span style={{ fontWeight: 700 }}>R³</span>
+            <span>Views {views}</span>
+            <span>Hop {hop}</span>
+          </div>
         </div>
       </div>
     ),
