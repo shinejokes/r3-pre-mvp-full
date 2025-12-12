@@ -193,32 +193,53 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           color: rgba(255, 255, 255, 0.8);
         }
 
-        .r3-title {
-          margin: 0 0 8px;
-          font-size: 24px;
-          font-weight: 700;
-          color: #ffffff;
-        }
+.r3-title {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
 
-        .r3-desc {
-          margin: 0 0 18px;
-          min-height: 20px;
-          font-size: 14px;
-          line-height: 1.5;
-          color: rgba(255, 255, 255, 0.75);
-        }
+  /* ✅ 제목은 항상 한 줄만 보이게 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-        .r3-stats-box {
-          display: flex;
-          align-items: stretch;
-          justify-content: space-between;
-          gap: 8px;
-          padding: 10px 12px;
-          border-radius: 999px;
-          background: radial-gradient(circle at top left, #18263f, #050816);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          margin-bottom: 24px;
-        }
+
+.r3-desc {
+  margin: 0 0 18px;
+  min-height: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.75);
+
+  /* ✅ 설명은 최대 3줄까지만 보이게 (폰/PC 공통) */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* -------------------------------------------------------
+   📊 Views Box – 그라데이션 제거 + 얇은 흰 테두리
+-------------------------------------------------------- */
+.r3-stats-box {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+
+  gap: 8px;
+  padding: 10px 12px;
+
+  border-radius: 999px;
+  background: #0a0f1f;                         /* ★ 단색 */
+  border: 1px solid rgba(255,255,255,0.32);    /* ★ 얇은 흰 테두리 */
+
+  margin-bottom: 24px;
+}
+
 
         .r3-stat {
           flex: 1 1 0;
@@ -250,48 +271,71 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
 }
 
 /* ✅ 세 버튼 모두 완전히 같은 박스가 되도록 강제 */
+/* -------------------------------------------------------
+   🔥 슬림하고 더 고급스러운 3버튼 스타일
+-------------------------------------------------------- */
+.r3-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+/* 모든 버튼 기본 공통 스타일 */
 .r3-action-btn {
   box-sizing: border-box;
-  margin: 0;
-  line-height: 1.2;           /* button / a 높이 통일 */
-  min-height: 46px;           /* 세로 높이 고정 */
+  width: 100% !important;
+  max-width: 340px !important;
+
+  min-height: 34px;          /* ★ 슬림 높이 */
+  padding: 6px 14px;         /* ★ 더 낮은 padding */
+
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.40);  
 
   display: flex !important;
   justify-content: center;
   align-items: center;
-  width: 100% !important;
-  max-width: 420px !important;
 
   text-align: center;
-  padding: 12px 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  background: #1d4ed8;
+  text-decoration: none;
+
   color: #ffffff;
   font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
+  font-weight: 600;
+
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.45);
+  transition: 0.15s ease;
 }
 
+/* hover */
 .r3-action-btn:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.10);
 }
 
+/* disabled */
 .r3-action-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: default;
-  box-shadow: none;
 }
 
-/* 첫 번째 버튼만 빨간색 */
+/* 🔴 첫 번째 버튼: Dark Red */
 .r3-first {
-  background: #ef4444 !important;
-  border-color: #fecaca !important;
-  box-shadow: 0 10px 24px rgba(239, 68, 68, 0.45) !important;
+  background: #7f1d1d !important;
+  border-color: rgba(255,255,255,0.35) !important;
 }
 
+/* 🔵 두 번째 버튼: Dark Blue */
+.r3-action-btn:nth-of-type(2) {
+  background: #1e3a8a !important;
+}
+
+/* 🟢 세 번째 버튼: Dark Green */
+.r3-action-btn:nth-of-type(3) {
+  background: #065f46 !important;
+}
 
         .r3-my-link-box {
           width: 100%;
@@ -333,10 +377,14 @@ export default function RedirectScreen({ share }: RedirectScreenProps) {
           text-align: left;
         }
 
-        @media (max-width: 480px) {
-          .r3-page {
-            padding: 16px 10px;
-          }
+@media (max-width: 480px) {
+  .r3-action-btn {
+    font-size: 13px;
+    padding: 6px 12px;     /* ✅ 모바일에서도 낮은 높이 유지 */
+    min-height: 40px;      /* 선택: 더 얇게 하고 싶으면 줄이기 */
+  }
+}
+
 
           .r3-card {
             padding: 18px 14px 22px;
