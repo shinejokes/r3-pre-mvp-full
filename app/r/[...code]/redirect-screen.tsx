@@ -220,7 +220,7 @@ export default function RedirectScreen({ share }: { share: ShareInfo }) {
         .r3-action-btn {
           width: 100%;
           max-width: 360px;
-          height: 30px;
+          height: 36px;
           border-radius: 999px;
           display: flex;
           justify-content: center;
@@ -294,7 +294,7 @@ export default function RedirectScreen({ share }: { share: ShareInfo }) {
         }
 
         .r3-copy-btn {
-          height: 28px; /* 버튼보다 살짝 낮게 */
+          height:34px; /* 버튼보다 살짝 낮게 */
           border-radius: 999px;
           background: linear-gradient(180deg, #0b1a3a, #08122a);
           border: 1px solid rgba(255, 255, 255, 0.18);
