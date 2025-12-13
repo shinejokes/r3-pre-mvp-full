@@ -43,7 +43,7 @@ export default function RedirectScreen({ share }: { share: ShareInfo }) {
     }
   }
 
-const handleCreateMyLink() {
+const handleCreateMyLink = async () => {
   try {
     setCreating(true);
     setError(null);
@@ -53,11 +53,12 @@ const handleCreateMyLink() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        parentRefCode: ref_code, // ✅ 이전 파일 방식: parentRefCode
+        parentRefCode: ref_code, // ✅ 중요: 이전 정상 버전 키
       }),
     });
 
     const text = await res.text();
+
     let data: any = null;
     try {
       data = text ? JSON.parse(text) : null;
@@ -69,7 +70,6 @@ const handleCreateMyLink() {
       throw new Error(data?.error || `링크 생성 실패 (HTTP ${res.status})`);
     }
 
-    // ✅ 이전 파일 방식: shareUrl
     if (!data?.ok || !data?.shareUrl) {
       throw new Error(data?.error || "링크 생성 응답이 올바르지 않습니다.");
     }
@@ -81,8 +81,7 @@ const handleCreateMyLink() {
   } finally {
     setCreating(false);
   }
-}
-
+};
 
   const handleCopy = async () => {
     if (!myLink) return;
