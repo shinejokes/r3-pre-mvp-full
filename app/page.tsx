@@ -93,9 +93,8 @@ export default async function HomePage() {
             R3 홈페이지(임시)
           </h1>
           <p style={{ fontSize: 15, lineHeight: 1.5, color: "#ddd" }}>
-            카카오톡, LINE 등에서 퍼나르는 링크에{" "}
+            카카오톡, LINE 등에서 퍼나르는 링크에
             <strong>조회수 · Hop</strong>을 붙여서
-            <br />
             “누가 얼마나 많이 전달했는지”를 실험하는 프로젝트입니다.
           </p>
 
@@ -141,7 +140,7 @@ export default async function HomePage() {
 </h2>
 
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
-         오늘 가장 많이 본 링크 5개입니다. 제목을 누르면 바로 이동합니다.
+         오늘 가장 많이 본 링크 5개입니다. 제목을 누르면 중간전달자 화면으로 이동합니다.
          </p>
 
 
