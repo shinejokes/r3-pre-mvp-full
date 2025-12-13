@@ -94,7 +94,7 @@ export default async function HomePage() {
           </h1>
           <p style={{ fontSize: 15, lineHeight: 1.5, color: "#ddd" }}>
             카카오톡, LINE 등에서 퍼나르는 링크에
-            <strong>조회수 · Hop</strong>을 붙여서
+            <strong> 조회수 · Hop</strong>을 붙여서
             “누가 얼마나 많이 전달했는지”를 실험하는 프로젝트입니다.
           </p>
 
@@ -172,7 +172,7 @@ export default async function HomePage() {
             오늘의 Top Rider 5 (임시)
           </h2>
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
-            중간전달자(Rider)가 기여한 조회수기준입니다. </p>
+            중간전달자(Rider)가 기여한 조회수 기준입니다. </p>
 
           {todayTop.length === 0 ? (
             <EmptyCard>
