@@ -169,7 +169,7 @@ export default async function HomePage() {
         {/* 2. 오늘의 Top Rider 5 */}
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
-            오늘의 Top Rider 5 (임시)
+            오늘의 Top Rider 5 (전달자 조회수)
           </h2>
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
             중간전달자(Rider)가 기여한 조회수 기준입니다. </p>
