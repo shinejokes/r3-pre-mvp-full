@@ -220,7 +220,7 @@ export default function RedirectScreen({ share }: { share: ShareInfo }) {
         .r3-action-btn {
           width: 100%;
           max-width: 360px;
-          height: 40px;
+          height: 30px;
           border-radius: 999px;
           display: flex;
           justify-content: center;
@@ -249,9 +249,19 @@ export default function RedirectScreen({ share }: { share: ShareInfo }) {
         }
 
         /* Premium Dark Blue / Green / Red */
-        .r3-btn-blue {
-          background: linear-gradient(180deg, #0b1a3a, #08122a);
-        }
+.r3-btn-blue {
+  background: linear-gradient(
+    180deg,
+    #143b8a 0%,   /* 상단 밝은 블루 */
+    #0b1f4d 100%  /* 하단 안정적인 네이비 */
+  );
+}
+
+.r3-btn-blue:hover {
+  filter: brightness(1.1);
+}
+
+
         .r3-btn-green {
           background: linear-gradient(180deg, #073321, #052616);
         }
@@ -284,7 +294,7 @@ export default function RedirectScreen({ share }: { share: ShareInfo }) {
         }
 
         .r3-copy-btn {
-          height: 38px; /* 버튼보다 살짝 낮게 */
+          height: 28px; /* 버튼보다 살짝 낮게 */
           border-radius: 999px;
           background: linear-gradient(180deg, #0b1a3a, #08122a);
           border: 1px solid rgba(255, 255, 255, 0.18);
