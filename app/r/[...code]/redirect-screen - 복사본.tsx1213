@@ -43,40 +43,45 @@ export default function RedirectScreen({ share }: { share: ShareInfo }) {
     }
   }
 
-  const handleCreateMyLink = async () => {
+const handleCreateMyLink = async () => {
+  try {
+    setCreating(true);
+    setError(null);
+    setCopied(false);
+
+    const res = await fetch("/api/share-child", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        parentRefCode: ref_code, // ✅ 중요: 이전 정상 버전 키
+      }),
+    });
+
+    const text = await res.text();
+
+    let data: any = null;
     try {
-      setCreating(true);
-      setError(null);
-      setCopied(false);
-
-      const res = await fetch("/api/create-my-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ parent_ref_code: ref_code }),
-      });
-
-      const data = await safeReadJson(res);
-
-      if (!res.ok) {
-        const msg =
-          data?.error ||
-          (typeof data?._raw === "string" && data._raw.slice(0, 160)) ||
-          `링크 생성 실패 (HTTP ${res.status})`;
-        throw new Error(msg);
-      }
-
-      // 성공 응답도 방어적으로 처리
-      const url = data?.url || data?.myLink || null;
-      if (!url) throw new Error("링크 생성 응답에 url이 없습니다.");
-
-      setMyLink(url);
-      setCreated(true);
-    } catch (e: any) {
-      setError(e?.message || "알 수 없는 오류");
-    } finally {
-      setCreating(false);
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = { _raw: text };
     }
-  };
+
+    if (!res.ok) {
+      throw new Error(data?.error || `링크 생성 실패 (HTTP ${res.status})`);
+    }
+
+    if (!data?.ok || !data?.shareUrl) {
+      throw new Error(data?.error || "링크 생성 응답이 올바르지 않습니다.");
+    }
+
+    setMyLink(data.shareUrl);
+    setCreated(true);
+  } catch (e: any) {
+    setError(e?.message || "링크 생성에 실패했습니다.");
+  } finally {
+    setCreating(false);
+  }
+};
 
   const handleCopy = async () => {
     if (!myLink) return;

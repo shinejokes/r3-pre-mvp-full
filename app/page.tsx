@@ -90,13 +90,13 @@ export default async function HomePage() {
         {/* 헤더 */}
         <header style={{ marginBottom: 32 }}>
           <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>
-            R3 실험 홈
+            R3 홈페이지(임시)
           </h1>
           <p style={{ fontSize: 15, lineHeight: 1.5, color: "#ddd" }}>
-            카카오톡 등에서 퍼나르는 링크에{" "}
+            카카오톡, LINE 등에서 퍼나르는 링크에{" "}
             <strong>조회수 · Hop</strong>을 붙여서
             <br />
-            “누가 어디까지 전달했는지”를 실험하는 프로젝트입니다.
+            “누가 얼마나 많이 전달했는지”를 실험하는 프로젝트입니다.
           </p>
 
           <div
@@ -119,7 +119,7 @@ export default async function HomePage() {
     backgroundColor: "#f9f2ff",
   }}
 >
-  내 링크 만들기
+  콘텐츠 등록하기
 </Link>
 
           </div>
@@ -127,16 +127,23 @@ export default async function HomePage() {
 
         {/* 1. 오늘의 Top Views 5 */}
         <section style={{ marginBottom: 32 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
-            오늘의 Top Views 5 (누적 조회수)
-          </h2>
+<h2
+  style={{
+    fontSize: 22,
+    fontWeight: 600,
+    marginBottom: 12,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  }}
+>
+  오늘의 Top Views 5(조회수)
+</h2>
+
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
-            Supabase <code>r3_shares</code> 테이블의 <code>views</code> 값을
-            기준으로 상위 5개의 공유 링크를 보여줍니다.
-            <br />
-            각 행의 제목을 클릭하면 실제 R3 중간 링크(<code>/r/[code]</code>)
-            로 이동합니다.
-          </p>
+         오늘 가장 많이 본 링크 5개입니다. 제목을 누르면 바로 이동합니다.
+         </p>
+
 
           {globalTop.length === 0 ? (
             <EmptyCard>
@@ -166,13 +173,7 @@ export default async function HomePage() {
             오늘의 Top Rider 5 (임시)
           </h2>
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
-            오늘 0시 이후에 생성된 중간 링크들 중에서{" "}
-            <code>views</code> 값이 큰 상위 5개를{" "}
-            <strong>Rider 관점의 임시 랭킹</strong>으로 보여줍니다.
-            <br />
-            여기서 <strong>My Views</strong>는 해당 Rider가 만든 링크에 기록된
-            조회수입니다.
-          </p>
+            중간전달자(Rider)가 기여한 조회수기준입니다. </p>
 
           {todayTop.length === 0 ? (
             <EmptyCard>
@@ -201,11 +202,7 @@ export default async function HomePage() {
             오늘의 Top Hop 5 (전달 깊이)
           </h2>
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
-            각 공유 링크의 <code>hop</code> 값을 기준으로,
-            <br />
-            네트워크를 가장 깊게 파고든 링크 상위 5개를 테이블 형태로
-            보여줍니다. <strong>Views</strong>로 동률을 정리합니다.
-          </p>
+           Hop은 몇 사람을 거쳐 전달되었느냐를 나타냅니다. </p>
 
           {hopTop.length === 0 ? (
             <EmptyCard>
