@@ -136,7 +136,7 @@ export default async function HomePage() {
     textOverflow: "ellipsis",
   }}
 >
-  오늘의 Top Views 5(조회수)
+  오늘의 Top Views 5
 </h2>
 
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
@@ -169,7 +169,7 @@ export default async function HomePage() {
         {/* 2. 오늘의 Top Rider 5 */}
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
-            오늘의 Top Rider 5 (전달자 조회수)
+            오늘의 Top Rider 5
           </h2>
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
             중간전달자(Rider)가 기여한 조회수 기준입니다. </p>
@@ -198,7 +198,7 @@ export default async function HomePage() {
         {/* 3. 오늘의 Top Hop 5 */}
         <section>
           <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
-            오늘의 Top Hop 5 (전달 깊이)
+            오늘의 Top Hop 5
           </h2>
           <p style={{ fontSize: 13, color: "#d0c5ff", marginBottom: 12 }}>
            Hop은 몇 사람을 거쳐 전달되었느냐를 나타냅니다. </p>
