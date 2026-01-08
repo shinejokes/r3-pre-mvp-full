@@ -15,9 +15,7 @@ export async function GET(req: NextRequest) {
   const supabase = supabaseServer();
   const { data, error } = await supabase
     .from("r3_shares")
-    .select(
-      "title, views, hop, original_url, target_url, thumbnail_url, message_id"
-    )
+    .select("original_url, target_url, thumbnail_url, message_id, hop, views")
     .eq("ref_code", shareId)
     .maybeSingle();
 
@@ -30,46 +28,32 @@ export async function GET(req: NextRequest) {
   }
 
   const {
-    title,
-    views,
-    hop,
     original_url,
     target_url,
     thumbnail_url,
     message_id,
   } = data as {
-    title: string | null;
-    views: number | null;
-    hop: number | null;
     original_url: string | null;
     target_url: string | null;
     thumbnail_url: string | null;
     message_id?: string | null;
+    hop?: number | null;
+    views?: number | null;
   };
 
-  // 1) 원본 기준 누적 조회수 (message_id 기준)
-  let viewsForDisplay = views ?? 0;
-
-  if (message_id) {
-    const { count, error: countError } = await supabase
-      .from("r3_hits")
-      .select("id", { count: "exact", head: true })
-      .eq("message_id", message_id);
-
-    if (!countError && typeof count === "number") {
-      viewsForDisplay = count;
-    }
-  }
+  // ----------------------------
+  // 1) 원본 썸네일 URL 결정
+  // ----------------------------
 
   // YouTube 썸네일 ID 추출
   function extractYouTubeId(url?: string | null): string | null {
     if (!url) return null;
 
     const m1 = url.match(/v=([A-Za-z0-9_-]{11})/);
-    if (m1 && m1[1]) return m1[1];
+    if (m1?.[1]) return m1[1];
 
     const m2 = url.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
-    if (m2 && m2[1]) return m2[1];
+    if (m2?.[1]) return m2[1];
 
     return null;
   }
@@ -83,11 +67,44 @@ export async function GET(req: NextRequest) {
     const videoId = extractYouTubeId(urlForId);
     if (videoId) {
       thumb = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-    } else {
-      thumb = null;
     }
   }
 
+  // ----------------------------
+  // 2) "전체 전달 수" (정적 신호 세트 기준)
+  //    - message_id 기준 r3_shares 개수
+  //    - message_id 없으면: 최소 1로 처리
+  // ----------------------------
+  let forwardCountForSignal = 1;
+
+  if (message_id) {
+    const { count, error: countError } = await supabase
+      .from("r3_shares")
+      .select("id", { count: "exact", head: true })
+      .eq("message_id", message_id);
+
+    if (!countError && typeof count === "number") {
+      forwardCountForSignal = Math.max(1, count);
+    }
+  }
+
+  // ----------------------------
+  // 3) R³ 색상(3단계)
+  //    0–9: black, 10–99: blue, 100+: green
+  // ----------------------------
+  function getR3ColorByForwards(n: number) {
+    if (n >= 100) return "#22c55e"; // green
+    if (n >= 10) return "#3b82f6";  // blue
+    return "#0b0f19";               // near-black (검정이지만 배경과 구분되게 살짝 톤)
+  }
+
+  const r3Color = getR3ColorByForwards(forwardCountForSignal);
+
+  // ----------------------------
+  // 4) OG 이미지 렌더
+  //    - 원본 썸네일 + R³ 배지 단독
+  //    - 문구/숫자/Views/Hop 모두 제거
+  // ----------------------------
   return new ImageResponse(
     (
       <div
@@ -99,7 +116,7 @@ export async function GET(req: NextRequest) {
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "#0b172a",
-          fontFamily: "system-ui, sans-serif",
+          fontFamily: 'system-ui, -apple-system, "Noto Sans KR", sans-serif',
           position: "relative",
         }}
       >
@@ -136,60 +153,41 @@ export async function GET(req: NextRequest) {
             />
           )}
 
+          {/* 원본 썸네일 위에 아주 얕은 어둠막(선택) — 과하지 않게 */}
           <div
             style={{
               position: "absolute",
               inset: 0,
               background:
-                "linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.55))",
+                "linear-gradient(to bottom, rgba(0,0,0,0.18), rgba(0,0,0,0.30))",
             }}
           />
-
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              fontSize: "40px",
-              letterSpacing: "8px",
-              color: "rgba(226,232,240,0.92)",
-              whiteSpace: "nowrap",
-              fontWeight: 700,
-            }}
-          >
-            R3 HAND-FORWARDED LINK
-          </div>
         </div>
 
-        {/* 하단 R3 카운터 배지 */}
+        {/* 하단 우측 R³ 배지 (단독, 색상 신호) */}
         <div
           style={{
             position: "absolute",
             right: 60,
             bottom: 60,
-            padding: "28px 44px",
+            padding: "22px 34px",
             borderRadius: 999,
             backgroundColor: "rgba(0,0,0,0.80)",
             border: "4px solid #ffffff",
             display: "flex",
             alignItems: "center",
-            gap: 60,
-            fontSize: 60,
-            lineHeight: 1.1,
-            fontWeight: 700,
-            color: "#ffffff",
+            justifyContent: "center",
+            fontSize: 72,
+            lineHeight: 1.0,
+            fontWeight: 800,
+            letterSpacing: 1,
+            color: r3Color, // ★ 정적 신호 세트: R³ 글자 색상
           }}
         >
-          <span>R³</span>
-          <span>Views {viewsForDisplay}</span>
-          <span>Hop {hop}</span>
+          R³
         </div>
       </div>
     ),
-    {
-      width: 1200,
-      height: 630,
-    }
+    { width: 1200, height: 630 }
   );
 }
