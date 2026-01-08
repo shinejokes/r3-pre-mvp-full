@@ -165,27 +165,27 @@ export async function GET(req: NextRequest) {
         </div>
 
         {/* 하단 우측 R³ 배지 (단독, 색상 신호) */}
-        <div
-          style={{
-            position: "absolute",
-            right: 60,
-            bottom: 60,
-            padding: "22px 34px",
-            borderRadius: 999,
-            backgroundColor: "rgba(0,0,0,0.80)",
-            border: "4px solid #ffffff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 72,
-            lineHeight: 1.0,
-            fontWeight: 800,
-            letterSpacing: 1,
-            color: r3Color, // ★ 정적 신호 세트: R³ 글자 색상
-          }}
-        >
-          R³
-        </div>
+<div
+  style={{
+    position: "absolute",
+    right: 48,
+    bottom: 48,
+    width: 96,
+    height: 96,
+    borderRadius: "50%",
+    backgroundColor: "rgba(255,255,255,0.35)", // 옅은 반투명
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 56,
+    fontWeight: 800,
+    color: getR3TextColor(forwardCountForSignal),
+    backdropFilter: "blur(2px)", // 지원 안 되면 무시됨
+  }}
+>
+  R³
+</div>
+
       </div>
     ),
     { width: 1200, height: 630 }
