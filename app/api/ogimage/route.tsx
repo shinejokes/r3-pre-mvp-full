@@ -1,257 +1,193 @@
-// app/api/ogimage/route.ts
-import { NextRequest } from "next/server";
 import { ImageResponse } from "next/og";
+import { NextRequest } from "next/server";
 import { supabaseServer } from "../../../lib/supabaseServer";
 
 export const runtime = "edge";
-
-const size = { width: 1200, height: 630 };
-
-type ContentMeta = {
-  typeLabel: string;
-  sourceLabel: string;
-};
-
-function getContentMeta(originalUrl?: string | null): ContentMeta {
-  let typeLabel = "링크";
-  let sourceLabel = "Web";
-
-  if (!originalUrl) return { typeLabel, sourceLabel };
-
-  try {
-    const url = new URL(originalUrl);
-    const host = url.hostname.toLowerCase();
-    const path = url.pathname.toLowerCase();
-
-    if (host.includes("youtube.com") || host.includes("youtu.be"))
-      return { typeLabel: "동영상", sourceLabel: "YouTube" };
-
-    if (host.includes("facebook.com"))
-      return { typeLabel: "동영상", sourceLabel: "Facebook" };
-
-    if (host.includes("instagram.com"))
-      return { typeLabel: "동영상/사진", sourceLabel: "Instagram" };
-
-    if (host.includes("blog.naver.com"))
-      return { typeLabel: "글", sourceLabel: "Naver Blog" };
-
-    if (host.includes("docs.google.com"))
-      return { typeLabel: "문서", sourceLabel: "Google Docs" };
-
-    if (/\.(png|jpg|jpeg|gif|webp|avif)$/.test(path))
-      return { typeLabel: "이미지", sourceLabel: "Web" };
-
-    if (/\.(mp4|mov|avi|mkv|webm)$/.test(path))
-      return { typeLabel: "동영상", sourceLabel: "Web" };
-
-    return { typeLabel: "링크", sourceLabel: url.hostname };
-  } catch {
-    return { typeLabel, sourceLabel };
-  }
-}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const shareId = searchParams.get("shareId");
 
-  // shareId 없을 때 기본 썸네일
   if (!shareId) {
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            background:
-              "radial-gradient(circle at 0% 0%, #0f172a, #020617 55%, #020617)",
-            color: "#e5e7eb",
-            fontFamily:
-              'system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif',
-          }}
-        >
-          <div style={{ fontSize: 48, letterSpacing: 4 }}>
-            R³ · THE HUMAN NETWORK
-          </div>
-        </div>
-      ),
-      size
-    );
+    return new Response("Invalid shareId", { status: 400 });
   }
 
   const supabase = supabaseServer();
-
   const { data, error } = await supabase
     .from("r3_shares")
-    .select("title, views, hop, original_url, description, message_id")
+    .select("original_url, target_url, thumbnail_url, message_id, hop, views")
     .eq("ref_code", shareId)
     .maybeSingle();
 
-  if (error || !data) {
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            background:
-              "radial-gradient(circle at 0% 0%, #0f172a, #020617 55%, #020617)",
-            color: "#e5e7eb",
-            fontFamily:
-              'system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif',
-          }}
-        >
-          링크 정보를 찾을 수 없습니다.
-        </div>
-      ),
-      size
-    );
+  if (error) {
+    return new Response(`Supabase error: ${error.message}`, { status: 500 });
   }
 
-  // 제목 (표시용으로만 살짝 자르기)
-  const rawTitle = data.title || "R3 링크";
-  const title =
-    rawTitle.length > 80 ? rawTitle.slice(0, 77) + "…" : rawTitle;
+  if (!data) {
+    return new Response("Share not found", { status: 404 });
+  }
 
-  // description: r3_shares → 없으면 r3_messages에서 fallback
-  let descriptionText =
-    (data.description && data.description.trim()) || null;
+  const {
+    original_url,
+    target_url,
+    thumbnail_url,
+    message_id,
+  } = data as {
+    original_url: string | null;
+    target_url: string | null;
+    thumbnail_url: string | null;
+    message_id?: string | null;
+    hop?: number | null;
+    views?: number | null;
+  };
 
-  if (!descriptionText && data.message_id) {
-    const { data: msg, error: msgError } = await supabase
-      .from("r3_messages")
-      .select("description")
-      .eq("id", data.message_id)
-      .maybeSingle<{ description: string | null }>();
+  // ----------------------------
+  // 1) 원본 썸네일 URL 결정
+  // ----------------------------
 
-    if (!msgError && msg?.description) {
-      const trimmed = msg.description.trim();
-      if (trimmed) descriptionText = trimmed;
+  // YouTube 썸네일 ID 추출
+  function extractYouTubeId(url?: string | null): string | null {
+    if (!url) return null;
+
+    const m1 = url.match(/v=([A-Za-z0-9_-]{11})/);
+    if (m1?.[1]) return m1[1];
+
+    const m2 = url.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
+    if (m2?.[1]) return m2[1];
+
+    return null;
+  }
+
+  let thumb: string | null = null;
+
+  if (thumbnail_url) {
+    thumb = thumbnail_url;
+  } else {
+    const urlForId = target_url || original_url || null;
+    const videoId = extractYouTubeId(urlForId);
+    if (videoId) {
+      thumb = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
     }
   }
 
-  const meta = getContentMeta(data.original_url);
-  const typeLine = `${meta.sourceLabel} · ${meta.typeLabel}`;
+  // ----------------------------
+  // 2) "전체 전달 수" (정적 신호 세트 기준)
+  //    - message_id 기준 r3_shares 개수
+  //    - message_id 없으면: 최소 1로 처리
+  // ----------------------------
+  let forwardCountForSignal = 1;
 
-  // message_id 묶음 total views
-  let totalViews = data.views ?? 0;
-  if (data.message_id) {
-    const { data: siblings } = await supabase
+  if (message_id) {
+    const { count, error: countError } = await supabase
       .from("r3_shares")
-      .select("views")
-      .eq("message_id", data.message_id);
+      .select("id", { count: "exact", head: true })
+      .eq("message_id", message_id);
 
-    if (siblings) {
-      totalViews = siblings.reduce(
-        (sum, r) => sum + (r.views ?? 0),
-        0
-      );
+    if (!countError && typeof count === "number") {
+      forwardCountForSignal = Math.max(1, count);
     }
   }
 
-  const views = totalViews;
-  const hop = data.hop ?? 0;
+  // ----------------------------
+  // 3) R³ 색상(3단계)
+  //    0–9: black, 10–99: blue, 100+: green
+  // ----------------------------
+  function getR3ColorByForwards(n: number) {
+    if (n >= 100) return "#22c55e"; // green
+    if (n >= 10) return "#3b82f6";  // blue
+    return "#0b0f19";               // near-black (검정이지만 배경과 구분되게 살짝 톤)
+  }
 
-  // ===== 썸네일 레이아웃 =====
-  const accentRed = "#fecaca"; // 옅은 붉은색
+  const r3Color = getR3ColorByForwards(forwardCountForSignal);
 
+  // ----------------------------
+  // 4) OG 이미지 렌더
+  //    - 원본 썸네일 + R³ 배지 단독
+  //    - 문구/숫자/Views/Hop 모두 제거
+  // ----------------------------
   return new ImageResponse(
     (
       <div
         style={{
-          width: "100%",
-          height: "100%",
+          width: "1200px",
+          height: "630px",
           display: "flex",
           flexDirection: "column",
-          padding: "64px 80px",
-          background:
-            "radial-gradient(circle at 0% 0%, #0f172a, #020617 55%, #020617)",
-          color: "#e5e7eb",
-          fontFamily:
-            'system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif',
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#0b172a",
+          fontFamily: 'system-ui, -apple-system, "Noto Sans KR", sans-serif',
+          position: "relative",
         }}
       >
-        {/* 1) 맨 윗줄: 영상 종류 (부제)  */}
+        {/* 상단 썸네일 영역 */}
         <div
           style={{
-            fontSize: 54,
-            fontWeight: 600,
-            color: accentRed,
-            marginBottom: 24,
+            width: "1060px",
+            height: "420px",
+            position: "relative",
+            borderRadius: "24px",
+            overflow: "hidden",
+            backgroundColor: "#020617",
+            boxShadow: "0 16px 48px rgba(0, 0, 0, 0.5)",
+            display: "flex",
           }}
         >
-          {typeLine}
+          {thumb ? (
+            <img
+              src={thumb}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                background:
+                  "radial-gradient(circle at center, #1f2a3f 0%, #050914 55%, #020308 100%)",
+              }}
+            />
+          )}
+
+          {/* 원본 썸네일 위에 아주 얕은 어둠막(선택) — 과하지 않게 */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(to bottom, rgba(0,0,0,0.18), rgba(0,0,0,0.30))",
+            }}
+          />
         </div>
 
-     {/* 2) 제목 — 한 줄 고정 */}
-<div
-  style={{
-    fontSize: 60,
-    fontWeight: 700,
-    color: "#fef08a",
-    lineHeight: 1.25,
-    whiteSpace: "nowrap",       // ★ 한 줄만 표시
-    overflow: "hidden",         // 넘치면 숨기기
-    textOverflow: "ellipsis",   // ★ 말줄임표
-  }}
->
-  {title}
-</div>
-
-
-        {/* 3) Description : 54, 최대 2줄 */}
- {/* 3) Description — 고정 박스 (최대 3줄) */}
-<div
-  style={{
-    marginTop: 24,             // 제목과의 간격 ↑
-    fontSize: 54,
-    lineHeight: 1.25,
-    height: 210,               // ★ 절대크기 박스 → 3줄 유지
-    overflow: "hidden",        // 넘치면 자름
-    display: "-webkit-box",
-    WebkitLineClamp: 3,        // 최대 3줄
-    WebkitBoxOrient: "vertical",
-    opacity: descriptionText ? 0.96 : 0,
-  }}
->
-  {descriptionText || " "}
-</div>
-
-
-        {/* 중간 여백 */}
-        <div style={{ flexGrow: 1 }} />
-
-        {/* 4) 맨 아랫줄: R³ THE HUMAN NETWORK · Views · Hop */}
-{/* 중간여백 */}
-<div style={{ flexGrow: 1 }} />
-
-{/* 4) 맨 아랫줄: R³ NETWORK · Views · Hop */}
-<div
-  style={{
-    fontSize: 54,
-    fontWeight: 500,
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 20,              // ← 설명과 약간 띄우기
-    whiteSpace: "nowrap",       // ← 가능하면 한 줄 유지
-  }}
->
-  <span style={{ letterSpacing: 2 }}>
-    R³ NETWORK                   {/* ← 글자를 줄여 한 줄에 맞추기 */}
-  </span>
-  <span style={{ color: accentRed }}>
-    Views {views} · Hop {hop}
-  </span>
-</div>
-
+        {/* 하단 우측 R³ 배지 (단독, 색상 신호) */}
+        <div
+          style={{
+            position: "absolute",
+            right: 60,
+            bottom: 60,
+            padding: "22px 34px",
+            borderRadius: 999,
+            backgroundColor: "rgba(0,0,0,0.80)",
+            border: "4px solid #ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 72,
+            lineHeight: 1.0,
+            fontWeight: 800,
+            letterSpacing: 1,
+            color: r3Color, // ★ 정적 신호 세트: R³ 글자 색상
+          }}
+        >
+          R³
+        </div>
       </div>
     ),
-    size
+    { width: 1200, height: 630 }
   );
 }
