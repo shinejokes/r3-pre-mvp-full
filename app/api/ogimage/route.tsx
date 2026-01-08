@@ -77,6 +77,12 @@ export async function GET(req: NextRequest) {
   // ----------------------------
   let forwardCountForSignal = 1;
 
+function getR3TextColor(forwardCount: number) {
+  if (forwardCount >= 100) return "#16a34a"; // green
+  if (forwardCount >= 10) return "#2563eb";  // blue
+  return "#111827";                           // dark gray (초기에도 잘 보임)
+}
+
   if (message_id) {
     const { count, error: countError } = await supabase
       .from("r3_shares")
