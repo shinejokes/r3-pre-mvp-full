@@ -127,37 +127,27 @@ function getR3TextColor(forwardCount: number) {
         }}
       >
         {/* 상단 썸네일 영역 */}
-        <div
-          style={{
-            width: "1060px",
-            height: "420px",
-            position: "relative",
-            borderRadius: "24px",
-            overflow: "hidden",
-            backgroundColor: "#020617",
-            boxShadow: "0 16px 48px rgba(0, 0, 0, 0.5)",
-            display: "flex",
-          }}
-        >
-          {thumb ? (
-            <img
-              src={thumb}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                background:
-                  "radial-gradient(circle at center, #1f2a3f 0%, #050914 55%, #020308 100%)",
-              }}
-            />
-          )}
+{/* 배경: 원본 썸네일을 캔버스 전체로 채움 (프레임 제거) */}
+{thumb ? (
+  <img
+    src={thumb}
+    style={{
+      width: "100%",
+      height: "100%",
+      objectFit: "cover",
+    }}
+  />
+) : (
+  <div
+    style={{
+      width: "100%",
+      height: "100%",
+      background:
+        "radial-gradient(circle at center, #1f2a3f 0%, #050914 55%, #020308 100%)",
+    }}
+  />
+)}
+
 
           {/* 원본 썸네일 위에 아주 얕은 어둠막(선택) — 과하지 않게 */}
           <div
