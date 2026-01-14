@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+Age: 373
+Cache-Control: public, max-age=600
+Content-Length: 0
+Content-Type: image/png
+Date: Fri, 09 Jan 2026 07:57:07 GMT
+Server: Vercel
+Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+X-Matched-Path: /api/ogimage
+X-Vercel-Cache: HIT
+X-Vercel-Id: icn1::sin1::xmr6l-1767945801195-47a3e3888029
+
