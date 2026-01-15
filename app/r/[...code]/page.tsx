@@ -53,7 +53,7 @@ export async function generateMetadata(
 
   const base =
     process.env.R3_APP_BASE_URL || "https://r3-pre-mvp-full.vercel.app";
-  const ogImageUrl = `${base}/api/ogimage?shareId=${refCode}`;
+ 
 
   return {
     title,
@@ -61,7 +61,7 @@ export async function generateMetadata(
 
    openGraph: {
   title: title,
-  description: description,
+  description: "",
   images: [
     {
       url: "https://r3-pre-mvp-full.vercel.app/og/default.png",
