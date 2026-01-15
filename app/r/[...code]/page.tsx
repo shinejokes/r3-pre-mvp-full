@@ -59,19 +59,22 @@ export async function generateMetadata(
     title,
     description: "",
 
-    openGraph: {
-      title,
-      description: "",
-      siteName: "", // ⭐ LINE이 하단에 붙이는 'R3 THE HUMAN NETWORK' 방지
-      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+   openGraph: {
+  title: title,
+  description: description,
+  images: [
+    {
+      url: "https://r3-pre-mvp-full.vercel.app/og/default.png",
+      width: 1200,
+      height: 630,
     },
+  ],
+},
+twitter: {
+  card: "summary_large_image",
+  images: ["https://r3-pre-mvp-full.vercel.app/og/default.png"],
+},
 
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description: "",
-      images: [ogImageUrl],
-    },
   };
 }
 
