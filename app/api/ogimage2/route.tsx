@@ -3,8 +3,20 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
+/** Edge 런타임용 base64 변환 (Buffer 금지) */
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000; // 너무 길면 call stack 터질 수 있어서 chunk
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
 function toDataUrl(contentType: string, bytes: ArrayBuffer) {
-  const base64 = Buffer.from(bytes).toString("base64");
+  const base64 = arrayBufferToBase64(bytes);
   return `data:${contentType};base64,${base64}`;
 }
 
@@ -16,73 +28,36 @@ async function fetchAsDataUrl(url: string) {
   return toDataUrl(ct, buf);
 }
 
-async function fetchLocalPngAsDataUrl(relPath: string) {
-  // relPath 예: "../../public/og/r3-black.png"
-  const url = new URL(relPath, import.meta.url);
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`local fetch failed: ${res.status}`);
-  const buf = await res.arrayBuffer();
-  return toDataUrl("image/png", buf);
-}
-
 export async function GET(req: Request) {
-const { searchParams } = new URL(req.url);
+  const { searchParams, origin } = new URL(req.url);
 
-// 1) 파라미터로 thumbUrl이 직접 오면 그걸 최우선 사용
-const thumbUrlParam = searchParams.get("thumbUrl");
+  // 1) thumbUrl이 오면 그걸 그대로 배경으로 사용
+  const thumbUrlParam = searchParams.get("thumbUrl");
 
-// 2) thumbUrl이 없으면, shareId로부터 target_url을 읽어 썸네일을 만든다(유튜브만)
-const shareId = searchParams.get("shareId") || searchParams.get("shareid") || "";
+  // (오늘은 합성만 하기로 했으니 shareId로 DB 조회는 다음 단계)
+  // const shareId = searchParams.get("shareId");
 
+  const thumbUrl = thumbUrlParam || null;
 
-// 유튜브 ID 추출 함수
-function extractYouTubeId(u: string): string | null {
+  // 배지: public/og/r3-black.png 를 “웹 경로”로 fetch (Edge 안전)
+  // ✅ public 폴더는 배포 후에도 /og/... 로 접근 가능
+  const badgeUrl = `${origin}/og/r3-black.png`;
+  let badgeDataUrl: string | null = null;
   try {
-    const url = new URL(u);
-
-    // youtu.be/<id>
-    if (url.hostname.includes("youtu.be")) {
-      const id = url.pathname.replace("/", "").trim();
-      return id || null;
-    }
-
-    // youtube.com/watch?v=<id>
-    if (url.hostname.includes("youtube.com")) {
-      const id = url.searchParams.get("v");
-      return id || null;
-    }
-
-    return null;
+    badgeDataUrl = await fetchAsDataUrl(badgeUrl);
   } catch {
-    return null;
+    badgeDataUrl = null;
   }
-}
 
-// ✅ 여기서 최종 thumbUrl 결정
-let thumbUrl: string | null = thumbUrlParam;
-
-// 아직 DB 연동을 안 붙였다면(오늘은 여기까지만), shareId로는 못 만든다.
-// 다음 단계에서 shareId -> target_url(Supabase) 읽는 코드만 추가할 것임.
-if (!thumbUrl) {
-  // 임시: shareId만 있을 때는 default로
-  // (다음에 "shareId로 Supabase 조회해서 target_url 얻기"를 붙이면 됨)
-  thumbUrl = null;
-}
-
-  // ✅ 2) 배지는 오늘은 검정(기본) 1개만 사용
-  // public/og/r3-black.png 를 만들어 둔 상태라고 가정
-  const badge = await fetchLocalPngAsDataUrl("../../public/og/r3-black.png");
-
+  // 배경 썸네일
   let thumbDataUrl: string | null = null;
- let thumbDataUrl: string | null = null;
-try {
-  if (thumbUrl) thumbDataUrl = await fetchAsDataUrl(thumbUrl);
-} catch {
-  thumbDataUrl = null;
-}
+  try {
+    if (thumbUrl) thumbDataUrl = await fetchAsDataUrl(thumbUrl);
+  } catch {
+    thumbDataUrl = null;
+  }
 
-
-  // ⚠️ 카톡 “0바이트 캐시” 재발 방지: 반드시 no-store
+  // ⚠️ 카톡 “0바이트 캐시” 재발 방지: no-store 고정
   const headers = {
     "Content-Type": "image/png",
     "Cache-Control": "no-store, max-age=0",
@@ -118,13 +93,18 @@ try {
             width: 104,
             height: 104,
             borderRadius: 999,
-            background: "rgba(255,255,255,0.55)",
+            background: "rgba(255,255,255,0.60)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <img src={badge} style={{ width: 76, height: 76 }} />
+          {badgeDataUrl ? (
+            <img src={badgeDataUrl} style={{ width: 76, height: 76 }} />
+          ) : (
+            // 배지 로드 실패 시, 임시 텍스트(디버그용)
+            <div style={{ fontSize: 28, fontWeight: 800, color: "#111" }}>R³</div>
+          )}
         </div>
       </div>
     ),
