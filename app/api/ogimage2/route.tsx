@@ -70,15 +70,17 @@ const thumbUrl = thumbUrlParam || DEFAULT_THUMB;
 
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: "1200px",
-          height: "630px",
-          position: "relative",
-          display: "flex",
-          background: "#000",
-        }}
-      >
+<div
+  style={{
+    width: "1200px",
+    height: "630px",
+    backgroundImage: `url(${thumbUrl})`,
+    backgroundRepeat: "no-repeat",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+
         {/* 배경: 원본 썸네일 (프레임 없이 꽉 채움) */}
         {thumbDataUrl ? (
           <img
