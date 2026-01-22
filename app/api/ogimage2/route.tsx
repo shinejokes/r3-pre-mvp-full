@@ -68,53 +68,44 @@ const thumbUrl = thumbUrlParam || DEFAULT_THUMB;
     "Cache-Control": "no-store, max-age=0",
   };
 
-  return new ImageResponse(
-    (
-<div
-  style={{
-    width: "1200px",
-    height: "630px",
-    backgroundImage: `url(${thumbUrl})`,
-    backgroundRepeat: "no-repeat",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-
-        {/* 배경: 원본 썸네일 (프레임 없이 꽉 채움) */}
-        {thumbDataUrl ? (
-          <img
-            src={thumbDataUrl}
-            style={{ width: "1200px", height: "630px", objectFit: "cover" }}
-          />
-        ) : (
-          <div style={{ width: "1200px", height: "630px", background: "#000" }} />
-        )}
-
-        {/* 우하단 R3 배지 (원형, 무테, 밝은 바탕) */}
+return new ImageResponse(
+  (
+    <div
+      style={{
+        width: "1200px",
+        height: "630px",
+        position: "relative",
+        overflow: "hidden",
+        backgroundColor: "#000", // 썸네일 실패해도 흰색 방지
+      }}
+    >
+      {/* 1) 배경: 원본 썸네일을 "이미지로" 꽉 채움 (backgroundImage 쓰지 말 것) */}
+      {thumbDataUrl ? (
+        <img
+          src={thumbDataUrl}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "1200px",
+            height: "630px",
+            objectFit: "cover",
+          }}
+        />
+      ) : (
         <div
           style={{
             position: "absolute",
-            right: 28,
-            bottom: 28,
-            width: 104,
-            height: 104,
-            borderRadius: 999,
-            background: "rgba(255,255,255,0.60)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            inset: 0,
+            background:
+              "radial-gradient(circle at center, #1f2a3f 0%, #050914 55%, #020308 100%)",
           }}
-        >
-          {badgeDataUrl ? (
-            <img src={badgeDataUrl} style={{ width: 76, height: 76 }} />
-          ) : (
-            // 배지 로드 실패 시, 임시 텍스트(디버그용)
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#111" }}>R³</div>
-          )}
-        </div>
-      </div>
-    ),
-    { width: 1200, height: 630, headers }
-  );
+        />
+      )}
+
+      {/* (오늘은 합성만이 목표이니, R3 배지/텍스트는 잠깐 빼도 됨) */}
+    </div>
+  ),
+  { width: 1200, height: 630 }
+);
+
 }
