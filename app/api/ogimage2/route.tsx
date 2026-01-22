@@ -33,11 +33,16 @@ export async function GET(req: Request) {
 
   // 1) thumbUrl이 오면 그걸 그대로 배경으로 사용
   const thumbUrlParam = searchParams.get("thumbUrl");
+// 기본 원본 썸네일 (테스트용 고정값)
+const DEFAULT_THUMB =
+  "https://i.ytimg.com/vi/16y1AkoZkmQ/hqdefault.jpg";
+
 
   // (오늘은 합성만 하기로 했으니 shareId로 DB 조회는 다음 단계)
   // const shareId = searchParams.get("shareId");
 
-  const thumbUrl = thumbUrlParam || null;
+const thumbUrl = thumbUrlParam || DEFAULT_THUMB;
+
 
   // 배지: public/og/r3-black.png 를 “웹 경로”로 fetch (Edge 안전)
   // ✅ public 폴더는 배포 후에도 /og/... 로 접근 가능
